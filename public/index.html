@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hellerman TCG</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="welcome-screen" style="display: flex;">
+        <div class="welcome-content">
+            <h1 class="hero-title">HELLERMAN TCG</h1>
+            <p class="hero-subtitle">Stań do walki i zbierz unikalne karty!</p>
+            
+            <div class="hero-buttons">
+                <button class="hero-btn login" onclick="window.location.href='login.html'">ZALOGUJ SIĘ</button>
+                <button class="hero-btn register" onclick="window.location.href='register.html'">REJESTRACJA</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="wallet-container" style="display:none;">
+        <div class="wallet-item">
+            <img src="coin_icon.png" alt="HC">
+            <span id="coin-amount">0</span>
+        </div>
+        <div class="wallet-item">
+            <img src="shard_icon.png" alt="Shards">
+            <div id="shard-display">
+                <span class="s-common">0</span>/
+                <span class="s-rare">0</span>/
+                <span class="s-epic">0</span>/
+                <span class="s-legendary">0</span>/
+                <span class="s-secret">0</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="ui-container" style="display:none;">
+        
+        <div class="ui-group">
+            <div id="profile-btn" onclick="window.location.href='login.html'"></div>
+            <div id="username-display" class="label-text">Zaloguj się</div>
+        </div>
+        
+        <div id="inventory-wrapper" class="ui-group" style="display:none;">
+            <div id="inventory-btn" onclick="openInventory()"></div>
+            <div class="label-text">Torba</div>
+        </div>
+
+        <div id="deckbuilder-wrapper" class="ui-group" style="display:none;">
+            <div id="deck-btn" onclick="openDeckBuilder()"></div>
+            <div class="label-text">Talie</div>
+        </div>
+
+        <div id="shop-wrapper" class="ui-group" style="display:none;">
+            <div id="shop-btn" onclick="openShop()"></div>
+            <div class="label-text">Sklep</div>
+        </div>
+
+        <div id="market-wrapper" class="ui-group" style="display:none;">
+            <div id="market-btn" onclick="openMarket()"></div>
+            <div class="label-text">Rynek</div>
+        </div>
+
+        <div id="collection-wrapper" class="ui-group" style="display:none;"> <div id="collection-btn" onclick="openCollection()"></div>
+            <div class="label-text">Kolekcja</div>
+        </div>
+
+        <div id="play-wrapper" class="ui-group" style="display:none;"> <div id="play-btn" onclick="window.location.href='/play'"></div>
+            <div class="label-text" style="color:#ff416c;">WALCZ</div>
+        </div>
+    </div>
+
+    <div id="game-scene">
+        
+        <h1 id="status-text" style="position: absolute; top: 15%; width: 100%; text-align: center; z-index: 40; text-shadow: 0 0 10px black; font-size: 32px; pointer-events: none;">Wczytywanie...</h1>
+
+        <div id="pack-stack-container"></div>
+        <div id="active-pack-container"></div>
+
+        <div id="booster-section" style="display:none;">
+            <div id="glow-bg"></div>
+            <div id="booster-wrapper">
+                <img src="booster.png" alt="Booster Pack" id="booster-img">
+            </div>
+        </div>
+
+        <div id="confetti-container"></div>
+        <div id="card-stack"></div>
+        
+        <div id="limit-message" style="display:none;">
+            <h2>Wróć jutro!</h2>
+            <p>Wykorzystałeś dzienny limit paczek.</p>
+        </div>
+    </div>
+
+    <div id="inventory-panel">
+        <div class="inv-header">
+            <div class="header-left">
+                <h2>Twoja Torba</h2>
+                <select id="inventory-sort" onchange="sortInventory()">
+                    <option value="rarity">Sortuj: Rzadkość (Domyślne)</option>
+                    <option value="id">Sortuj: ID</option>
+                    <option value="atk">Sortuj: Atak</option>
+                    <option value="def">Sortuj: Obrona</option>
+                    <option value="qty">Sortuj: Ilość (Od najwięcej)</option>
+                </select>
+            </div>
+            <div class="close-btn" onclick="closeInventory()">✕</div>
+        </div>
+        <div class="inv-tabs">
+            <div class="inv-tab active" onclick="switchInvTab('cards')">KARTY</div>
+            <div class="inv-tab" onclick="switchInvTab('packs')">PACZKI</div>
+        </div>
+        <div class="inv-grid" id="inv-grid"></div>
+    </div>
+
+    <div id="deck-builder-panel">
+        <div class="inv-header">
+            <h2>Edytor Talii</h2>
+            <div class="close-btn" onclick="closeDeckBuilder()">✕</div>
+        </div>
+        <div class="db-container">
+            <div class="db-section db-left">
+                <h3>Twoje Talie</h3>
+                <div id="deck-slots-list"></div>
+                <button id="save-deck-btn" onclick="saveCurrentDeck()">ZAPISZ TALIĘ</button>
+            </div>
+            <div class="db-section db-center" id="drop-zone-deck">
+                <h3>Aktualna Talia <input type="text" id="deck-name-input" value="Nowa Talia"></h3>
+                <div class="db-card-list" id="current-deck-grid"></div>
+                <div class="db-counter" id="deck-counter">0 / 18</div>
+            </div>
+            <div class="db-section db-right" id="drop-zone-collection">
+                <h3>Dostępne Karty</h3>
+                <div class="db-card-list" id="collection-grid"></div>
+                <div class="db-counter" id="collection-counter">0 / 0</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="market-panel">
+        <div class="inv-header">
+            <h2>Rynek Kart</h2>
+            <div class="close-btn" onclick="closeMarket()">✕</div>
+        </div>
+        <div class="market-filters">
+            <input type="text" id="filter-name" placeholder="Szukaj nazwy..." oninput="filterMarket()">
+            <select id="filter-rarity" onchange="filterMarket()">
+                <option value="">Wszystkie rzadkości</option>
+                <option value="Common">Common</option>
+                <option value="Rare">Rare</option>
+                <option value="Epic">Epic</option>
+                <option value="Legendary">Legendary</option>
+                <option value="Secret">Secret</option>
+            </select>
+        </div>
+
+        <div class="market-content" id="market-list">
+            <p style="text-align:center; color:gray; margin-top:20px;">Ładowanie ofert...</p>
+        </div>
+    </div>
+
+    <div id="shop-panel">
+        <div class="inv-header">
+            <h2>Sklep Hellermana</h2>
+            <div class="close-btn" onclick="closeShop()">✕</div>
+        </div>
+        <div class="shop-content">
+            <div class="shop-section-title">Darmowe Nagrody</div>
+            <div class="daily-container">
+                <div class="daily-box today" id="daily-today">
+                    <h3>DZIŚ</h3>
+                    <div class="reward-icon" id="daily-icon-today">?</div>
+                    <div class="reward-val" id="daily-val-today">...</div>
+                    <button class="shop-buy-btn" id="daily-claim-btn" onclick="claimDaily()">ODBIERZ</button>
+                </div>
+                <div class="daily-box tomorrow">
+                    <h3>JUTRO...</h3>
+                    <div class="reward-icon" id="daily-icon-tom">?</div>
+                    <div class="reward-val" id="daily-val-tom">...</div>
+                    <div class="lock-overlay">🔒</div>
+                </div>
+            </div>
+
+            <div class="shop-section-title">Oferty za Monety</div>
+            <div class="shop-grid">
+                <div class="shop-item">
+                    <img src="booster.png" class="shop-item-img">
+                    <div class="shop-item-name">Karzeł Pack</div>
+                    <div class="shop-item-price price-coin">100 HC</div>
+                    <button class="shop-buy-btn" onclick="buyItem('coin_pack', 100, 'coins')">KUP</button>
+                </div>
+            </div>
+
+            <div class="shop-section-title">Przetwarzanie Shardów</div>
+            <div class="shop-grid">
+                <div class="shop-item">
+                    <img src="booster.png" class="shop-item-img">
+                    <div class="shop-item-name">Common Transmute</div>
+                    <div class="shop-item-price price-shard">10 Common</div>
+                    <button class="shop-buy-btn" onclick="buyItem('shard_common_pack', 10, 'shard_common')">WYMIEŃ</button>
+                </div>
+                <div class="shop-item">
+                    <img src="booster.png" class="shop-item-img">
+                    <div class="shop-item-name">Rare Transmute</div>
+                    <div class="shop-item-price price-shard-rare">4 Rare</div>
+                    <button class="shop-buy-btn" onclick="buyItem('shard_rare_pack', 4, 'shard_rare')">WYMIEŃ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-panel">
+        <div id="admin-toggle-btn" onclick="toggleAdminPanel()">➤</div>
+
+        <h3>Testowanie Paczek</h3>
+        <label><input type="checkbox" id="admin-unlimited"> Nielimitowane paczki</label>
+        <button class="admin-action-btn" style="background: #e67e22; margin-top: 10px; margin-bottom: 15px;" onclick="adminResetDaily()">
+            ⟳ ZRESETUJ MÓJ LICZNIK (0/5)
+        </button>
+        <label>Ilość kart:</label> 
+        <input type="number" id="admin-count" value="5" min="1" max="50">
+        
+        <label>Rzadkość:</label> 
+        <select id="admin-rarity">
+            <option value="Random">Losowa</option>
+            <option value="Common">Common</option>
+            <option value="Rare">Rare</option>
+            <option value="Epic">Epic</option>
+            <option value="Legendary">Legendary</option>
+        </select>
+        
+        <hr style="border-color: #555; margin: 10px 0;">
+        
+        <label><input type="checkbox" id="admin-force-numbered" onchange="toggleAdminTierSelect()"> Wymuś Numerowaną</label>
+        
+        <div id="admin-tier-wrapper" style="display:none; margin-top:5px;">
+            <label>Wybierz Tier (Nakład):</label>
+            <select id="admin-force-tier">
+                <option value="Random">Losowy z karty</option>
+                <option value="50">1/50 (Emerald)</option>
+                <option value="25">1/25 (Gold)</option>
+                <option value="10">1/10 (Pink)</option>
+                <option value="5">1/5 (Blue)</option>
+                <option value="1">1/1 (Red)</option>
+            </select>
+        </div>
+
+        <button class="admin-action-btn" onclick="adminOpenPack()" style="margin-top:15px;">OTWÓRZ PACZKĘ</button>
+        
+
+        <hr style="border-color: #555; margin: 15px 0;">
+
+        <h3>Dodaj Zasoby</h3>
+        <label>Gracz (Login):</label>
+        <input type="text" id="admin-target-user" placeholder="Login gracza">
+        
+        <label>Zasób:</label>
+        <select id="admin-resource-type">
+            <option value="coins">Hellerman Coins</option>
+            <option value="shard_common">Shard Common</option>
+            <option value="shard_rare">Shard Rare</option>
+            <option value="shard_epic">Shard Epic</option>
+            <option value="shard_legendary">Shard Legendary</option>
+            <option value="shard_secret">Shard Secret</option>
+        </select>
+        
+        <label>Ilość:</label>
+        <input type="number" id="admin-resource-amount" value="100">
+        
+        <button class="admin-action-btn green" onclick="adminAddResources()">DODAJ</button>
+    </div>
+
+    <div id="card-preview-modal">
+        <div class="preview-content">
+            <div id="preview-card-container"></div>
+            
+            <div id="smash-controls">
+                <label style="color:#ddd; font-size:14px;">Ile duplikatów wymienić?</label>
+                <div class="smash-row">
+                    <input type="number" id="smash-amount" value="1" min="1">
+                    <span class="max-text" id="smash-max-text">/ 5</span>
+                </div>
+                <button class="action-btn purple" onclick="confirmSmash()">POTWIERDŹ</button>
+            </div>
+
+            <div class="preview-actions">
+                <button id="smash-btn" class="action-btn purple">WYMIEŃ NA SHARDY</button>
+                <button class="action-btn gray" title="Otwiera modal sprzedaży">WYSTAW NA RYNKU</button>
+                <button class="action-btn red" onclick="closePreview()">ZAMKNIJ</button>
+            </div>
+            <div id="preview-msg"></div>
+        </div>
+    </div>
+
+    <div id="buy-modal" style="display:none;" class="modal-overlay">
+        <div class="modal-box">
+            <h3>Kupujesz: <span id="buy-name"></span></h3>
+            <p>Cena: <span id="buy-price"></span></p>
+            <input type="number" id="buy-amount" value="1" min="1" style="font-size:20px; padding:5px; width:80px; text-align:center;">
+            <div style="margin-top:20px; display:flex; gap:10px; justify-content: center;">
+                <button class="action-btn purple" onclick="confirmBuy()">POTWIERDŹ</button>
+                <button class="action-btn red" onclick="closeBuyModal()">ANULUJ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="sell-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-box">
+            <h3>Wystaw na Sprzedaż</h3>
+            <p id="sell-card-name" style="color:gold; font-weight:bold;"></p>
+            
+            <label>Ilość:</label>
+            <div class="smash-row" style="justify-content:center; margin-bottom:10px;">
+                <input type="number" id="sell-amount" value="1" min="1" style="width:60px; text-align:center;">
+                <span class="max-text" id="sell-max-text">/ 1</span>
+            </div>
+
+            <label>Cena za sztukę (HC):</label>
+            <input type="number" id="sell-price" value="100" min="1" step="10" style="width:100px; text-align:center; font-size:20px; color:gold; background:#333; border:1px solid gold; padding:5px;">
+
+            <div style="margin-top:20px; display:flex; gap:10px; justify-content:center;">
+                <button class="action-btn purple" onclick="confirmSell()">WYSTAW</button>
+                <button class="action-btn red" onclick="closeSellModal()">ANULUJ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="help-modal">
+        <div class="help-content">
+            <div class="help-header">
+                <h2>Centrum Pomocy</h2>
+                <div class="close-btn" onclick="closeHelpMenu()">✕</div>
+            </div>
+            
+            <div id="help-menu-main">
+                <button class="help-option-btn blue" onclick="showDropRates()">Procentowe Szanse</button>
+                <button class="help-option-btn red" onclick="showReportForm()">Zgłoś Problem</button>
+                <button class="help-option-btn gold" onclick="showSuggestForm()">Zasugeruj Kartę</button>
+                <button id="admin-reports-btn" class="help-option-btn purple" style="display:none;" onclick="showAdminReports()">Przejrzyj Zgłoszenia (Admin)</button>
+            </div>
+
+            <div id="help-section-rates" class="help-section" style="display:none;">
+                <h3>Szanse na trafienie</h3>
+                <ul id="rates-list">Ładowanie...</ul>
+                <button class="back-btn" onclick="backToHelpMain()">Powrót</button>
+            </div>
+
+            <div id="help-section-report" class="help-section" style="display:none;">
+                <h3>Zgłoś Problem</h3>
+                <input type="text" id="rep-nick" placeholder="Twój Nick" class="help-input">
+                <input type="email" id="rep-email" placeholder="Twój Email" class="help-input">
+                <input type="text" id="rep-subject" placeholder="Temat zgłoszenia" class="help-input">
+                <textarea id="rep-desc" placeholder="Opis problemu..." class="help-input area"></textarea>
+                <button class="action-btn red" onclick="submitProblem()">WYŚLIJ</button>
+                <button class="back-btn" onclick="backToHelpMain()">Powrót</button>
+            </div>
+
+            <div id="help-section-suggest" class="help-section" style="display:none;">
+                <h3>Zasugeruj Kartę</h3>
+                <input type="text" id="sug-nick" placeholder="Twój Nick" class="help-input">
+                <input type="text" id="sug-name" placeholder="Nazwa Postaci" class="help-input">
+                <select id="sug-rarity" class="help-input">
+                    <option value="Common">Common</option><option value="Rare">Rare</option>
+                    <option value="Epic">Epic</option><option value="Legendary">Legendary</option><option value="Secret">Secret</option>
+                </select>
+                <select id="sug-type" class="help-input">
+                    <option value="W zwarciu">W zwarciu</option><option value="Dystansowy">Dystansowy</option><option value="Specjalna">Specjalna</option>
+                </select>
+                <input type="text" id="sug-stats" placeholder="Statystyki (np. 10 ATK / 5 DEF)" class="help-input">
+                <input type="text" id="sug-img" placeholder="Link do obrazka (opcjonalne)" class="help-input">
+                <textarea id="sug-desc" placeholder="Opis karty / Umiejętności..." class="help-input area"></textarea>
+                <button class="action-btn gold" onclick="submitSuggestion()">WYŚLIJ POMYSŁ</button>
+                <button class="back-btn" onclick="backToHelpMain()">Powrót</button>
+            </div>
+
+            <div id="help-section-admin" class="help-section" style="display:none;">
+                <h3>Zgłoszenia Graczy</h3>
+                <div id="admin-reports-list"></div>
+                <button class="back-btn" onclick="backToHelpMain()">Powrót</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="collection-panel">
+    <div class="inv-header">
+    <div class="header-left">
+        <h2>Księga Kolekcji</h2>
+        <select id="collection-sort" onchange="sortCollection()">
+            <option value="id">Sortuj: ID (Domyślne)</option>
+            <option value="rarity">Sortuj: Rzadkość</option>
+            <option value="atk">Sortuj: Atak (ATK)</option>
+            <option value="def">Sortuj: Obrona (DEF)</option>
+            <option value="name">Sortuj: Nazwa (A-Z)</option>
+        </select>
+    </div>
+    <div class="close-btn" onclick="closeCollection()">✕</div>
+</div>
+    
+    <div class="collection-content">
+        <div id="main-collection-grid"></div>
+    </div>
+
+    <div id="collection-stats">
+        <span id="collection-total">0 / 0</span>
+        <div id="collection-tooltip"></div>
+    </div>
+</div>
+<div id="custom-alert" class="modal-overlay" style="display:none; z-index: 10000;">
+    <div class="modal-box" style="border-color: #9b59b6;">
+        <h3 style="color: #9b59b6; margin-bottom: 15px;">KOMUNIKAT</h3>
+        <p id="custom-alert-msg" style="font-size: 18px; color: white;">...</p>
+        <button class="action-btn purple" style="margin-top: 20px;" onclick="document.getElementById('custom-alert').style.display='none'">OK</button>
+    </div>
+</div>
+    
+    <div id="help-btn" onclick="openHelpMenu()">?</div>
+
+    <script src="script.js"></script>
+    <script src="script-inventory.js"></script> 
+    <script src="script-shop.js"></script>
+    <script src="script-help.js"></script>
+    <script src="script-market.js"></script>
+    <script src="script-collection.js"></script>
+</body>
+</html>

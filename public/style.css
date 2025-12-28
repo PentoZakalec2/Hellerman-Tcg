@@ -1,0 +1,1646 @@
+/* =========================================
+   1. BAZA I ZMIENNE
+   ========================================= */
+:root {
+    /* WYMIARY KART W GRZE (GIGANTYCZNE) */
+    --card-width: 400px;
+    --card-height: 560px;
+}
+
+body {
+    background-color: #121212;
+    background-image: radial-gradient(circle at center, #1e1e24 0%, #000000 100%);
+    color: white;
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0; 
+    height: 100vh; 
+    overflow: hidden;
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+}
+
+#game-scene {
+    position: relative; 
+    width: 100%; 
+    height: 100%;
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+    perspective: 1500px;
+}
+
+/* =========================================
+   2. UI: WALUTY I MENU GŁÓWNE
+   ========================================= */
+
+/* --- LEWY GÓRNY RÓG (PORTFEL) --- */
+#wallet-container {
+    position: absolute; 
+    top: 20px; 
+    left: 20px; 
+    z-index: 200;
+    display: flex; 
+    gap: 20px;
+    background: rgba(0, 0, 0, 0.6); 
+    padding: 10px 25px; 
+    border-radius: 30px;
+    border: 1px solid #444;
+    backdrop-filter: blur(5px);
+}
+
+.wallet-item {
+    display: flex; 
+    align-items: center; 
+    gap: 10px;
+    font-family: 'Courier New', monospace; 
+    font-weight: bold; 
+    font-size: 18px;
+}
+
+.wallet-item img { 
+    width: 32px; 
+    height: 32px; 
+    filter: drop-shadow(0 0 5px black); 
+}
+
+/* Kolory cyferek */
+#coin-amount { color: #ffd700; text-shadow: 0 0 5px #b8860b; }
+.s-common { color: #bdc3c7; }
+.s-rare { color: #3498db; }
+.s-epic { color: #9b59b6; }
+.s-legendary { color: #f1c40f; }
+.s-secret { color: #e74c3c; }
+
+
+/* --- PRAWY GÓRNY RÓG (PRZYCISKI) --- */
+#ui-container {
+    position: absolute; 
+    top: 20px; 
+    right: 20px; 
+    z-index: 200;
+    display: flex; 
+    flex-direction: column; 
+    align-items: flex-end; 
+    gap: 20px;
+}
+
+.ui-group {
+    display: flex; 
+    flex-direction: column; 
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.ui-group:hover { transform: scale(1.1); }
+
+.label-text {
+    margin-top: 5px; 
+    font-size: 12px; 
+    color: #fff; 
+    text-shadow: 1px 1px 2px black; 
+    text-align: center; 
+    width: 100%; 
+    font-weight: bold;
+}
+
+/* Ikony Przycisków */
+#profile-btn {
+    width: 60px; height: 60px; border-radius: 50%;
+    border: 3px solid gold; background: #000 url('profile_icon.png') center/cover;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+#inventory-btn {
+    width: 55px; height: 55px; border-radius: 50%;
+    border: 3px solid #3498db; background: #000 url('bag_icon.png') center/cover;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+#deck-btn {
+    width: 55px; height: 55px; border-radius: 50%;
+    border: 3px solid #9b59b6; background: #000 url('cards_icon.png') center/cover;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+
+/* =========================================
+   3. ADMIN PANEL (CHOWANY)
+   ========================================= */
+#admin-panel {
+    position: fixed; 
+    left: 0; 
+    top: 50%;
+    transform: translateY(-50%); /* Domyślnie otwarty */
+    background: rgba(0, 0, 0, 0.95);
+    border: 2px solid #ff416c; 
+    border-left: none;
+    padding: 20px; 
+    width: 240px; 
+    border-radius: 0 15px 15px 0;
+    color: white; 
+    z-index: 1000;
+    display: none; /* JS włączy to dla admina */
+    box-shadow: 5px 5px 20px rgba(0,0,0,0.5);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Klasa do chowania panelu */
+#admin-panel.collapsed {
+    transform: translate(-240px, -50%);
+}
+
+/* Przycisk strzałki (Toggle) */
+#admin-toggle-btn {
+    position: absolute;
+    right: -30px; 
+    top: 50%; 
+    transform: translateY(-50%);
+    width: 30px; 
+    height: 60px;
+    background: #ff416c;
+    border-radius: 0 10px 10px 0;
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+    cursor: pointer;
+    font-weight: bold;
+    box-shadow: 3px 0 10px rgba(0,0,0,0.5);
+    color: white;
+}
+
+#admin-panel h3 {
+    margin-top: 0; 
+    color: #ff416c; 
+    font-size: 16px; 
+    border-bottom: 1px solid #444; 
+    padding-bottom: 5px;
+}
+
+#admin-panel label {
+    display: block; 
+    margin: 8px 0 2px 0; 
+    font-size: 12px; 
+    color: #ccc;
+}
+
+#admin-panel input, 
+#admin-panel select {
+    width: 100%; 
+    padding: 6px; 
+    background: #333; 
+    color: white; 
+    border: 1px solid #555; 
+    margin-bottom: 5px;
+}
+
+.admin-action-btn {
+    width: 100%; 
+    padding: 8px; 
+    margin-top: 10px;
+    background: linear-gradient(45deg, #ff416c, #ff4b2b);
+    border: none; 
+    color: white; 
+    font-weight: bold; 
+    cursor: pointer; 
+    border-radius: 5px;
+}
+.admin-action-btn.green {
+    background: linear-gradient(45deg, #27ae60, #2ecc71);
+}
+.admin-action-btn:hover { filter: brightness(1.1); }
+
+
+/* =========================================
+   4. MODAL: PODGLĄD KARTY + SMASH
+   ========================================= */
+#card-preview-modal {
+    position: fixed; 
+    top: 0; left: 0; 
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.95); /* Bardzo ciemne tło, skupia uwagę */
+    z-index: 2000; 
+    display: none;
+    justify-content: center; 
+    align-items: center; 
+    backdrop-filter: blur(10px);
+    overflow-y: auto; /* Scrollowanie na małych ekranach */
+}
+
+/* Kontener wewnątrz modala */
+.preview-content {
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    gap: 25px;
+    width: 100%;
+    /* Usuwamy height: 100%, żeby content mógł się rozciągnąć */
+    min-height: 100vh; 
+    justify-content: center;
+    padding: 40px 0; /* Margines góra/dół */
+    box-sizing: border-box;
+}
+
+/* Scena 3D dla karty */
+#preview-card-container {
+    perspective: 2000px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* Zarezerwuj sztywne miejsce, żeby nic nie skakało */
+    width: 100%;
+    height: auto !important;
+    min-height: 600px !important; /* Miejsce na kartę + ID */
+    overflow: visible !important;
+    margin-bottom: 10px;
+}
+
+/* Panel wyboru ilości do zniszczenia */
+#smash-controls {
+    display: none; 
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    background: rgba(20, 20, 20, 0.9);
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid #9b59b6;
+    box-shadow: 0 0 30px rgba(155, 89, 182, 0.3);
+    z-index: 200;
+}
+
+.smash-row {
+    display: flex; 
+    align-items: center; 
+    gap: 10px;
+}
+
+#smash-amount {
+    width: 80px; 
+    padding: 10px; 
+    font-size: 24px; 
+    text-align: center;
+    background: #000; 
+    color: #fff; 
+    border: 2px solid #9b59b6; 
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+.max-text { font-size: 16px; color: #ccc; font-family: monospace; }
+
+.preview-actions { 
+    display: flex; 
+    gap: 20px; 
+    margin-top: 10px; 
+    z-index: 200;
+}
+
+/* Style przycisków */
+.action-btn {
+    padding: 15px 30px; 
+    border: none; 
+    border-radius: 8px; 
+    font-weight: 800; 
+    font-size: 16px; 
+    cursor: pointer; 
+    color: white; 
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+    overflow: hidden;
+}
+.action-btn:hover { transform: translateY(-3px); filter: brightness(1.2); }
+.action-btn:active { transform: translateY(1px); }
+
+.action-btn.purple { 
+    background: linear-gradient(135deg, #8e44ad, #9b59b6); 
+    box-shadow: 0 4px 15px rgba(142, 68, 173, 0.6); 
+}
+.action-btn.gray { 
+    background: #34495e; 
+    color: #bdc3c7; 
+    cursor: not-allowed; 
+    opacity: 0.7;
+}
+.action-btn.red { 
+    background: linear-gradient(135deg, #c0392b, #e74c3c); 
+    box-shadow: 0 4px 15px rgba(192, 57, 43, 0.6); 
+}
+
+#preview-msg { 
+    color: #e74c3c; 
+    font-weight: bold; 
+    font-size: 18px;
+    min-height: 25px; 
+    margin-top: 10px;
+    text-shadow: 0 0 5px black;
+}
+
+
+/* =========================================
+   5. PANELE: EKWIPUNEK I DECK BUILDER
+   ========================================= */
+#inventory-panel, #deck-builder-panel {
+    position: fixed; 
+    bottom: -100%; 
+    left: 0; 
+    width: 100%; 
+    background: rgba(16, 16, 20, 0.98); 
+    z-index: 500; 
+    transition: bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex; 
+    flex-direction: column; 
+    box-shadow: 0 -10px 50px rgba(0,0,0,0.8);
+}
+
+#inventory-panel { height: 85vh; border-top: 4px solid #3498db; }
+#deck-builder-panel { height: 95vh; border-top: 4px solid #9b59b6; z-index: 600; }
+
+.open { bottom: 0 !important; }
+
+/* Nagłówki */
+.inv-header {
+    padding: 20px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    background: rgba(255,255,255,0.05); 
+    border-bottom: 1px solid #333;
+}
+.inv-header select {
+    background: #111;
+    color: #ddd;
+    border: 1px solid #555;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    outline: none;
+    transition: 0.2s;
+    margin-left: 15px; /* Odstęp od tytułu */
+}
+.inv-header select:hover {
+    border-color: #9b59b6; /* Fioletowy akcent */
+    color: white;
+    background: #222;
+}
+.inv-header h2 { margin: 0; color: #fff; text-transform: uppercase; letter-spacing: 2px; }
+
+.close-btn { font-size: 30px; color: #ff416c; cursor: pointer; font-weight: bold; padding: 0 15px; }
+.close-btn:hover { color: red; transform: scale(1.2); }
+
+/* Siatka Ekwipunku */
+.inv-grid {
+    flex: 1; 
+    overflow-y: auto; 
+    padding: 30px;
+    display: flex; 
+    flex-wrap: wrap; 
+    justify-content: center; 
+    gap: 30px;
+}
+
+.inv-card-item {
+    width: 200px; 
+    height: 280px; 
+    position: relative;
+    border-radius: 12px; 
+    transition: transform 0.2s; 
+    cursor: pointer;
+    overflow: hidden; /* To utnie wystające elementy */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #000; /* Tło dla kart */
+    overflow: visible !important; /* ZMIANA: Było hidden, musi być visible */
+    z-index: 1; /* Żeby odznaka była na wierzchu */
+}
+.inv-card-item:hover { transform: scale(1.05); z-index: 10; }
+.inv-card-item img { 
+    width: 100%; 
+    height: 100%; 
+    object-fit: fill; /* Dla kart - wypełnij */
+    border-radius: 12px; 
+}
+.inv-pack-img {
+    object-fit: contain !important; /* Dla paczek - zachowaj proporcje */
+    width: 80% !important; /* Trochę marginesu */
+    height: 80% !important;
+}
+
+.qty-badge {
+    position: absolute; bottom: -10px; right: -10px;
+    background: linear-gradient(45deg, #ff416c, #ff4b2b);
+    color: white; font-weight: bold; padding: 5px 12px;
+    border-radius: 20px; font-size: 14px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5); border: 2px solid #fff;
+}
+
+/* UKŁAD DECK BUILDERA (3 KOLUMNY) */
+.db-container { display: flex; height: 100%; overflow: hidden; }
+.db-section { padding: 10px; position: relative; border-right: 1px solid #333; display: flex; flex-direction: column; }
+.db-section h3 { text-align: center; color: #aaa; margin: 15px 0; text-transform: uppercase; font-size: 14px; letter-spacing: 1px; }
+
+.db-left { width: 15%; background: #121212; align-items: center; }
+.db-center { width: 40%; background: #1a1a1d; }
+.db-right { width: 45%; background: #121212; }
+
+/* Sloty Talii */
+.deck-slot {
+    width: 85%; padding: 15px 10px; margin-bottom: 10px;
+    background: #252525; border: 1px solid #444; color: #888;
+    text-align: center; cursor: pointer; border-radius: 5px; transition: 0.2s;
+}
+.deck-slot:hover { background: #333; color: #ccc; }
+.deck-slot.active { border-color: #9b59b6; color: white; background: #3a2a40; box-shadow: 0 0 10px rgba(155, 89, 182, 0.3); }
+
+#save-deck-btn {
+    margin-top: auto; margin-bottom: 30px; width: 90%; padding: 12px;
+    background: #27ae60; border: none; color: white; font-weight: bold; 
+    border-radius: 5px; cursor: pointer;
+}
+#save-deck-btn:hover { background: #2ecc71; }
+
+#deck-name-input {
+    background: transparent; border: none; border-bottom: 2px solid #555;
+    color: #9b59b6; font-weight: bold; text-align: center; font-size: 16px; width: 200px;
+}
+
+/* Karty w Deck Builderze */
+.db-card-list {
+    flex: 1; overflow-y: auto; padding: 15px;
+    display: flex; flex-wrap: wrap; align-content: flex-start; gap: 10px; justify-content: center;
+}
+.db-card {
+    width: 120px; height: 168px; position: relative; border-radius: 8px; 
+    cursor: grab; background: #000; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    transition: transform 0.1s;
+}
+.db-card:hover { transform: scale(1.1); z-index: 100; border: 2px solid white; }
+.db-card img { width: 100%; height: 100%; object-fit: fill; border-radius: 8px; pointer-events: none; }
+
+.db-card.rarity-Common { border: 1px solid #7f8c8d; }
+.db-card.rarity-Rare { border: 1px solid #3498db; }
+.db-card.rarity-Epic { border: 1px solid #9b59b6; }
+.db-card.rarity-Legendary { border: 1px solid #f1c40f; }
+
+.db-card .qty {
+    position: absolute; bottom: -5px; right: -5px;
+    background: #e74c3c; color: white; font-size: 10px; padding: 2px 6px; 
+    border-radius: 10px; font-weight: bold; border: 1px solid white;
+}
+
+.db-counter { position: absolute; bottom: 10px; font-size: 20px; font-weight: bold; opacity: 0.8; }
+#deck-counter { left: 20px; color: #9b59b6; }
+#collection-counter { right: 20px; color: #3498db; }
+
+/* Drag & Drop */
+.dragging { opacity: 0.4; transform: scale(0.9); }
+.drag-over { background: rgba(155, 89, 182, 0.1); border: 2px dashed #9b59b6; }
+
+
+/* =========================================
+   6. SCENA GRY: BOOSTER I STÓŁ
+   ========================================= */
+
+/* BOOSTER - DUŻY */
+#booster-wrapper { 
+    width: 500px; /* Zmniejszono z 600px, żeby nie był gigantem */
+    position: relative; 
+    transform-style: preserve-3d; 
+    transition: transform 0.1s linear; 
+    cursor: pointer; 
+}
+#booster-img { width: 100%; filter: drop-shadow(0 0 30px rgba(0,0,0,0.6)); transform: scale(var(--scale-factor, 1)); transition: transform 0.2s; }
+
+#booster-section {
+    position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 50; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    transition: top 0.8s, transform 0.8s;
+}
+#booster-section.peeking { top: 100%; transform: translate(-50%, -30%); cursor: pointer; }
+#booster-section.peeking:hover { transform: translate(-50%, -40%) scale(1.05); }
+#booster-section.hidden-below { top: 100%; transform: translate(-50%, 100%); transition: none; }
+
+#glow-bg {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 650px; height: 650px; /* Zmniejszone z 100vw, żeby nie zasłaniały wszystkiego */
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.15) 0%, transparent 70%);
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.5s;
+    pointer-events: none;
+    border-radius: 50%;
+}
+/* STOS KART (Wymiary z :root) */
+#card-stack {
+    position: absolute; 
+    width: var(--card-width); 
+    height: var(--card-height); 
+    display: none; 
+    justify-content: center; 
+    align-items: center; 
+    z-index: 100;
+}
+
+.card-wrapper {
+    position: absolute; width: 100%; height: 100%;
+    transform-style: preserve-3d; transition: transform 0.1s ease-out; cursor: pointer;
+}
+
+.card-wrapper.preview-mode {
+    transform-style: preserve-3d;
+    transition: transform 0.1s ease-out; /* Płynność ruchu myszką */
+    box-shadow: 0 0 50px rgba(0,0,0,0.8); /* Duży cień */
+}
+
+.card-wrapper.preview-mode .card-inner::after {
+    content: '';
+    position: absolute; top:0; left:0; right:0; bottom:0;
+    background: linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
+    opacity: 0; 
+    pointer-events: none;
+    transition: opacity 0.1s;
+    mix-blend-mode: overlay;
+    z-index: 10;
+}
+
+.card-wrapper.preview-mode:hover .card-inner::after { opacity: 1; }
+.card-inner {
+    width: 100%; height: 100%; position: relative; 
+    transform-style: preserve-3d; transition: transform 0.6s;
+    border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+}
+.flipped .card-inner { transform: rotateY(180deg); }
+
+.card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 20px; overflow: hidden; }
+.card-back { background: #222 url('card_back.png') center/cover; border: 2px solid #444; }
+.card-front { background: #000; transform: rotateY(180deg); border: 1px solid transparent; display: block; padding: 0; }
+.card-front img { width: 100%; height: 100%; object-fit: fill; display: block; border-radius: 20px; }
+
+/* Poświaty 3D */
+.rarity-Common .card-front { box-shadow: 0 0 20px rgba(189, 195, 199, 0.4); }
+.rarity-Rare .card-front { box-shadow: 0 0 30px rgba(52, 152, 219, 0.7); }
+.rarity-Epic .card-front { box-shadow: 0 0 40px rgba(155, 89, 182, 0.8); }
+.rarity-Legendary .card-front { box-shadow: 0 0 60px rgba(241, 196, 15, 1); }
+
+.serial-overlay {
+    position: absolute; bottom: 8%; left: 50%; transform: translateX(-50%);
+    background: linear-gradient(90deg, transparent, rgba(0,0,0,0.8), transparent);
+    padding: 5px 20px; border-radius: 10px; color: #ffd700;
+    font-family: monospace; font-weight: bold; font-size: 18px;
+    text-shadow: 0 2px 2px black; z-index: 10; pointer-events: none;
+    white-space: nowrap; border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.click-punch {
+    animation: punch 0.1s ease-in-out;
+}
+
+/* Animacje */
+.slide-out { animation: slideAway 0.6s forwards ease-in; }
+.slide-up-enter {
+    transform: translateX(-50%) translateY(200px) !important; /* Startuje schowana w dole */
+    opacity: 0;
+    transition: none; /* Wyłączamy animacje na start */
+}
+@keyframes slideAway { to { transform: translateX(150vw) rotate(90deg); opacity: 0; } }
+@keyframes punch { 0% { transform: scale(1); } 50% { transform: scale(0.95); filter: brightness(1.5); } 100% { transform: scale(1); } }
+
+/* Animacja obracania promieni */
+@keyframes spinRays { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+.confetti { position: absolute; width: 12px; height: 12px; animation: fall 1s forwards ease-out; }
+@keyframes fall { 0% { transform: translate(0,0) scale(1); opacity: 1; } 100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; } }
+
+@keyframes shakePack { 
+    0% { transform: translate(0, 0) rotate(0deg); } 
+    25% { transform: translate(-5px, 5px) rotate(calc(var(--shake-intensity) * -1deg)); } 
+    75% { transform: translate(5px, -5px) rotate(calc(var(--shake-intensity) * 1deg)); } 
+    100% { transform: translate(0, 0) rotate(0deg); } 
+}
+.shaking #booster-img { animation: shakePack 0.2s infinite; }
+
+.explode { animation: explodeAnim 0.6s forwards; pointer-events: none; }
+@keyframes explodeAnim { 
+    0% { transform: scale(var(--scale-factor, 1)); opacity: 1; } 
+    50% { transform: scale(2); opacity: 0; filter: blur(10px); } 
+    100% { transform: scale(3); opacity: 0; visibility: hidden } 
+}
+
+#limit-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 200; }
+#limit-message h2 { font-size: 50px; color: #ff4b2b; }
+/* --- BUTTON POMOCY (Prawy Dolny Róg) --- */
+#help-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    background: #444; /* Tu będzie Twój obrazek znaku zapytania */
+    border: 2px solid white;
+    border-radius: 50%;
+    color: white;
+    font-size: 30px;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    z-index: 400; /* ZMIANA: Było 1000. Teraz chowa się pod panelami. */
+    box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    transition: transform 0.2s;
+    /* Jeśli dodasz obrazek, odkomentuj linię niżej */
+    /* background: url('help_icon.png') center/cover; text-indent: -9999px; */
+}
+#help-btn:hover { transform: scale(1.1); background-color: #555; }
+
+/* --- MODAL POMOCY --- */
+#help-modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85); z-index: 2001; display: none;
+    justify-content: center; align-items: center; backdrop-filter: blur(3px);
+}
+
+.help-content {
+    background: #1a1a1d; border: 2px solid #555;
+    width: 500px; max-height: 90vh; overflow-y: auto;
+    border-radius: 15px; padding: 20px;
+    box-shadow: 0 0 50px rgba(0,0,0,0.8);
+    display: flex; flex-direction: column; gap: 15px;
+}
+
+.help-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 10px; }
+.help-header h2 { margin: 0; color: #fff; }
+
+/* Przyciski Menu Głównego */
+.help-option-btn {
+    width: 100%; padding: 15px; margin-bottom: 10px;
+    font-size: 16px; font-weight: bold; color: white;
+    border: none; border-radius: 8px; cursor: pointer; text-align: left;
+    transition: transform 0.1s;
+}
+.help-option-btn:hover { transform: translateX(5px); }
+.help-option-btn.blue { background: #3498db; }
+.help-option-btn.red { background: #c0392b; }
+.help-option-btn.gold { background: #f1c40f; color: #000; }
+
+
+/* Formularze */
+.help-input {
+    width: 100%; padding: 10px; margin-bottom: 10px;
+    background: #333; border: 1px solid #555; color: white;
+    border-radius: 5px; box-sizing: border-box;
+}
+.help-input.area { height: 100px; resize: vertical; }
+
+.back-btn {
+    background: transparent; border: 1px solid #777; color: #ccc;
+    padding: 5px 15px; cursor: pointer; margin-top: 10px; border-radius: 5px;
+}
+.back-btn:hover { background: #333; }
+
+/* Drop Rates List */
+#rates-list { list-style: none; padding: 0; }
+#rates-list li { padding: 8px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; }
+.rate-val { font-weight: bold; color: gold; }
+
+/* Admin Reports List */
+#admin-reports-list { max-height: 400px; overflow-y: auto; }
+.report-item {
+    background: #252525; padding: 10px; margin-bottom: 10px; border-radius: 5px; border-left: 4px solid #555;
+}
+.report-item.problem { border-left-color: #c0392b; }
+.report-item.suggestion { border-left-color: #f1c40f; }
+.rep-meta { font-size: 12px; color: #888; margin-bottom: 5px; }
+.rep-title { font-weight: bold; color: white; margin-bottom: 5px; }
+.rep-body { font-size: 14px; color: #ccc; white-space: pre-wrap; }
+.help-option-btn.purple { 
+    background: #9b59b6; 
+    border: 1px dashed white; 
+}
+/* Ikona Sklepu */
+#shop-btn {
+    width: 55px; height: 55px; border-radius: 50%;
+    border: 3px solid #2ecc71; /* Zielony */
+    background: #000 url('shop_icon.png') center/cover;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+/* Panel Sklepu */
+#shop-panel {
+    position: fixed; top: 100px; right: -400px; /* Wysuwa się z prawej */
+    width: 380px; height: calc(100vh - 120px);
+    background: rgba(16, 16, 20, 0.98);
+    border-left: 4px solid #2ecc71;
+    z-index: 550;
+    transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex; flex-direction: column;
+    box-shadow: -10px 0 50px rgba(0,0,0,0.8);
+    border-radius: 20px 0 0 20px;
+}
+#shop-panel.open { right: 0; }
+
+.shop-content {
+    flex: 1; overflow-y: auto; padding: 20px;
+    scrollbar-width: thin; scrollbar-color: #2ecc71 #111;
+}
+
+.shop-section-title {
+    color: #2ecc71; font-weight: bold; text-transform: uppercase;
+    border-bottom: 1px solid #444; margin: 20px 0 10px 0; padding-bottom: 5px;
+}
+
+/* Daily Rewards */
+.daily-container { display: flex; gap: 10px; justify-content: space-between; }
+.daily-box {
+    flex: 1; background: #222; padding: 15px; border-radius: 10px;
+    text-align: center; position: relative; border: 1px solid #444;
+}
+.daily-box.today { border-color: gold; box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); }
+.daily-box h3 { margin: 0 0 10px 0; font-size: 14px; color: #aaa; }
+.reward-icon { font-size: 30px; margin-bottom: 5px; }
+.reward-val { font-weight: bold; color: white; }
+.lock-overlay { 
+    position: absolute; top:0; left:0; width:100%; height:100%; 
+    background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center;
+    font-size: 30px; border-radius: 10px;
+}
+
+/* Shop Grid */
+.shop-grid { display: flex; flex-direction: column; gap: 15px; }
+.shop-item {
+    display: flex; align-items: center; background: #252525;
+    padding: 10px; border-radius: 10px; gap: 15px;
+    transition: transform 0.2s;
+}
+.shop-item:hover { transform: scale(1.02); background: #333; }
+.shop-item-img { width: 50px; height: 70px; object-fit: cover; }
+.shop-item-name { flex: 1; font-weight: bold; }
+.shop-item-price { font-weight: bold; font-family: monospace; }
+.price-coin { color: #ffd700; }
+.price-shard { color: #bdc3c7; }
+.price-shard-rare { color: #3498db; }
+
+.shop-buy-btn {
+    padding: 8px 15px; background: #2ecc71; border: none; color: white;
+    font-weight: bold; border-radius: 5px; cursor: pointer;
+}
+.shop-buy-btn:hover { background: #27ae60; }
+.shop-buy-btn:disabled { background: #555; cursor: not-allowed; }
+
+/* ZAKŁADKI EKWIPUNKU */
+.inv-tabs { display: flex; background: #222; }
+.inv-tab {
+    flex: 1; text-align: center; padding: 15px; cursor: pointer;
+    font-weight: bold; color: #888; border-bottom: 3px solid transparent;
+}
+.inv-tab:hover { color: white; background: #333; }
+.inv-tab.active { color: #3498db; border-bottom-color: #3498db; background: #1a1a1d; }
+
+/* Modal Zakupu */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8); z-index: 2000;
+    display: flex; justify-content: center; align-items: center;
+}
+.modal-box {
+    background: #222; padding: 30px; border-radius: 15px; border: 2px solid #2ecc71;
+    text-align: center;
+}
+.flying-pack {
+    position: fixed;
+    width: 200px; /* Rozmiar startowy (taki jak w eq) */
+    height: 280px;
+    z-index: 2000;
+    transition: all 0.8s cubic-bezier(0.19, 1, 0.22, 1); /* Płynny ease-out */
+    pointer-events: none;
+}
+/* Ikona Rynku */
+#market-btn {
+    width: 55px; height: 55px; border-radius: 50%;
+    border: 3px solid #e67e22; 
+    background: #000 url('market_icon.png') center/cover;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+/* Panel Rynku */
+#market-panel {
+    position: fixed; top: 0; right: -500px; /* Szerszy niż sklep */
+    width: 480px; height: 100vh;
+    background: rgba(16, 16, 20, 0.98);
+    border-left: 4px solid #e67e22;
+    z-index: 560; /* Wyżej niż sklep */
+    transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex; flex-direction: column;
+    box-shadow: -10px 0 50px rgba(0,0,0,0.8);
+}
+#market-panel.open { right: 0; }
+
+.market-content {
+    flex: 1; overflow-y: auto; padding: 20px;
+    scrollbar-width: thin; scrollbar-color: #e67e22 #111;
+}
+
+/* Kafelki ofert na rynku */
+.market-item {
+    display: flex; align-items: center; 
+    background: linear-gradient(90deg, #252525 0%, #1a1a1d 100%);
+    padding: 10px; border-radius: 12px; margin-bottom: 15px;
+    border: 1px solid #444; position: relative;
+    transition: transform 0.2s;
+}
+.market-item:hover { transform: translateX(-5px); border-color: #e67e22; }
+
+.market-card-img {
+    width: 60px; height: 84px; object-fit: cover; border-radius: 6px;
+    border: 1px solid #555; margin-right: 15px;
+}
+
+.market-info { flex: 1; }
+.market-card-name { font-weight: bold; font-size: 16px; color: white; }
+.market-seller { font-size: 12px; color: #888; margin-top: 2px; }
+.market-seller span { color: #e67e22; font-weight: bold; }
+
+.market-buy-section { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.market-price { font-size: 18px; font-weight: bold; color: gold; font-family: monospace; }
+.market-qty { font-size: 12px; color: #ccc; }
+
+.market-buy-btn {
+    padding: 5px 15px; background: #e67e22; border: none; color: white;
+    font-weight: bold; border-radius: 5px; cursor: pointer; font-size: 12px;
+}
+.market-buy-btn:hover { background: #d35400; }
+.market-buy-btn:disabled { background: #555; cursor: default; }
+
+/* Styl moich ofert (wyróżnienie) */
+.market-item.mine { border-color: #3498db; opacity: 0.8; }
+.market-item.mine .market-buy-btn { display: none; } /* Nie można kupić od siebie */
+/* --- MARKET FILTERS --- */
+.market-filters {
+    padding: 15px;
+    background: #1a1a1d;
+    border-bottom: 1px solid #333;
+    display: flex;
+    gap: 10px;
+}
+
+#filter-name {
+    flex: 1;
+    padding: 8px;
+    background: #333;
+    border: 1px solid #555;
+    color: white;
+    border-radius: 5px;
+}
+
+#filter-rarity {
+    background: #333;
+    border: 1px solid #555;
+    color: white;
+    padding: 8px;
+    border-radius: 5px;
+}
+
+/* --- PRZYCISK ANULOWANIA (X) --- */
+.cancel-listing-btn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 24px;
+    height: 24px;
+    background: #c0392b;
+    color: white;
+    border-radius: 50%;
+    border: 2px solid #1a1a1d;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    z-index: 10;
+    transition: transform 0.2s;
+}
+.cancel-listing-btn:hover {
+    transform: scale(1.2);
+    background: red;
+}
+
+/* Podświetlenie, że można kliknąć w obrazek */
+.market-card-img {
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.market-card-img:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+/* --- STOS PACZEK I AKTYWNA PACZKA --- */
+
+/* Kontener aktywnej paczki (środek dół) */
+#active-pack-container {
+    position: absolute;
+    bottom: -230px; /* Musi wystawać tylko góra (przy 400px wysokości, chowamy większość) */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 400px; /* Jeszcze większa i masywniejsza */
+    z-index: 50;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    /* Ważne: to musi być auto domyślnie */
+    pointer-events: auto;
+}
+
+#active-pack-container:hover {
+    /* Wysuwa się mocno w górę i powiększa */
+    transform: translateX(-50%) translateY(-180px) scale(1.05);
+}
+
+#active-pack-container img {
+    width: 100%;
+    filter: drop-shadow(0 0 40px rgba(0,0,0,0.9)); /* Mocniejszy cień */
+}
+
+/* Kontener stosu (po lewej) */
+#pack-stack-container {
+    position: absolute;
+    bottom: -150px; 
+    left: 15%; /* Odsunięte bardziej w lewo */
+    display: flex;
+    align-items: flex-end;
+    flex-direction: row-reverse; 
+    pointer-events: none; 
+}
+
+.stack-pack {
+    width: 260px; /* Zwiększone ze 220px */
+    margin-right: -190px; 
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: default;
+    position: relative;
+    pointer-events: auto; 
+}
+
+.stack-pack img {
+    width: 100%;
+    filter: brightness(0.5) drop-shadow(0 0 10px rgba(0,0,0,0.8));
+    transition: filter 0.3s;
+}
+
+/* Efekt najechania na paczkę w stosie */
+.stack-pack:hover {
+    transform: translateY(-120px) scale(1.05);
+    z-index: 100;
+}
+.stack-pack:hover img {
+    filter: brightness(1);
+}
+
+/* Animacja przenoszenia ze stosu na dół */
+.pack-transfer-anim {
+    position: fixed;
+    z-index: 9999;
+    /* transition: all sprawia, że width i height też się animują płynnie */
+    transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); 
+    pointer-events: none;
+    transform-origin: center center;
+}
+#booster-section.active-glow #glow-bg {
+    opacity: 1;
+    background: conic-gradient(from 0deg, transparent 0%, rgba(255,215,0,0.1) 10%, transparent 20%, rgba(255,215,0,0.1) 30%, transparent 40%, rgba(255,215,0,0.1) 50%, transparent 60%, rgba(255,215,0,0.1) 70%, transparent 80%, rgba(255,215,0,0.1) 90%, transparent 100%);
+    animation: spinRays 20s linear infinite; /* Wolniejsze obroty */
+}
+
+/* --- STYL KOLEKCJI --- */
+
+/* Przycisk */
+#collection-btn {
+    width: 55px; height: 55px; border-radius: 50%;
+    border: 3px solid #9b59b6; 
+    background: #000 url('collection_icon.png') center/cover;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    cursor: pointer; transition: transform 0.2s;
+}
+#collection-btn:hover { transform: scale(1.1); }
+
+/* Panel */
+#collection-panel {
+    position: fixed; bottom: -100%; left: 0; width: 100%; 
+    height: 90vh; 
+    background: rgba(10, 10, 15, 0.98); 
+    border-top: 4px solid #9b59b6;
+    z-index: 600; 
+    transition: bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex; flex-direction: column;
+    box-shadow: 0 -10px 50px rgba(0,0,0,0.9);
+}
+#collection-panel.open { bottom: 0 !important; }
+
+.collection-content {
+    flex: 1; overflow-y: auto; padding: 30px;
+    display: flex; justify-content: center;
+}
+
+#collection-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    width: 100%;
+    padding-bottom: 60px;
+}
+
+/* KARTA W KOLEKCJI - WAŻNE WYMIARY */
+.coll-card {
+    /* To są style awaryjne, gdyby JS ich nie nadał */
+    width: 160px; height: 224px;
+    background: #222; border: 2px solid #555;
+    display: flex; justify-content: center; align-items: center;
+}
+
+.coll-card img {
+    width: 100%; height: 100%; object-fit: cover; border-radius: 6px;
+}
+
+.coll-card.owned { border-color: #9b59b6; cursor: pointer; }
+.coll-card.owned:hover { transform: scale(1.05); z-index: 10; box-shadow: 0 0 15px #9b59b6; }
+
+.coll-card.locked { opacity: 0.5; border-style: dashed; }
+.coll-card.locked img.lock-icon { width: 50px !important; height: 50px !important; object-fit: contain; }
+
+/* Licznik */
+#collection-stats {
+    position: absolute; 
+    bottom: 30px; 
+    right: 40px;
+    background: #9b59b6; 
+    color: white;
+    padding: 10px 25px; 
+    border-radius: 30px;
+    font-weight: bold; 
+    font-size: 20px; 
+    font-family: monospace;
+    cursor: help; 
+    z-index: 700; /* Musi być wyżej niż tło panelu */
+    border: 2px solid white;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+
+#collection-tooltip {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    bottom: 50px; /* Wyświetla się NAD licznikiem */
+    right: 0;
+    width: 220px;
+    background: rgba(0, 0, 0, 0.95);
+    border: 2px solid #9b59b6;
+    padding: 15px;
+    border-radius: 10px;
+    transition: opacity 0.3s, bottom 0.3s;
+    pointer-events: none; /* Żeby myszka nie migotała */
+    z-index: 1000;
+}
+#collection-stats:hover #collection-tooltip {
+    visibility: visible;
+    opacity: 1;
+    bottom: 60px; /* Lekka animacja w górę */
+}
+.stat-row { 
+    display: flex; 
+    justify-content: space-between; 
+    margin-bottom: 5px; 
+    font-size: 14px;
+    border-bottom: 1px solid #333;
+}
+#play-btn {
+    width: 70px; height: 70px; border-radius: 50%;
+    border: 3px solid #ff416c; 
+    background: #000 url('swords_icon.png') center/cover; /* Dodaj plik swords_icon.png! */
+    box-shadow: 0 0 20px rgba(255, 65, 108, 0.6);
+    transition: transform 0.2s;
+}
+#play-btn:hover { transform: scale(1.15) rotate(5deg); }
+
+/* =========================================================
+   NOWY STYL KART NUMEROWANYCH (AURA + POŁYSK)
+   ========================================================= */
+
+/* 1. BAZA - RAMKI RZADKOŚCI (Muszą być ważniejsze niż Tiery!) */
+/* Nadpisujemy border, żeby zawsze zależał od rzadkości */
+.card-wrapper.rarity-Common .card-front    { border: 2px solid #7f8c8d !important; }
+.card-wrapper.rarity-Rare .card-front      { border: 2px solid #3498db !important; }
+.card-wrapper.rarity-Epic .card-front      { border: 2px solid #9b59b6 !important; }
+.card-wrapper.rarity-Legendary .card-front { border: 2px solid #f1c40f !important; }
+
+/* 2. EFEKT POŁYSKU (HOLO) - Wspólna animacja */
+.card-wrapper.numbered .card-front::after {
+    content: "";
+    position: absolute;
+    top: 0; left: -100%;
+    width: 200%; height: 100%;
+    /* Ustawienie gradientu pod kątem dla efektu "przesuwającego się światła" */
+    background: linear-gradient(
+        115deg, 
+        transparent 20%, 
+        var(--shine-color, rgba(255,255,255,0.3)) 40%, 
+        var(--shine-intense, rgba(255,255,255,0.6)) 50%, 
+        var(--shine-color, rgba(255,255,255,0.3)) 60%, 
+        transparent 80%
+    );
+    z-index: 5;
+    pointer-events: none;
+    mix-blend-mode: color-dodge; /* To sprawia, że błysk "wtawia się" w grafikę */
+    animation: holoSwipe 4s infinite linear;
+}
+
+@keyframes holoSwipe {
+    0% { transform: translateX(-50%); }
+    100% { transform: translateX(50%); }
+}
+
+/* 3. KONFIGURACJA TIERÓW (Kolory Aury i Połysku) */
+
+/* --- 1/50: EMERALD (Szmaragd) --- */
+.tier-50 .card-front {
+    /* Aura zewnętrzna (Glow) */
+    box-shadow: 0 0 30px rgba(46, 204, 113, 0.6), 0 0 10px #2ecc71 !important; 
+}
+.tier-50 .card-front::after {
+    --shine-color: rgba(46, 204, 113, 0.3);
+    --shine-intense: rgba(46, 204, 113, 0.8);
+}
+.tier-50 .serial-overlay { 
+    background: linear-gradient(90deg, #000, #2ecc71); border: 1px solid #2ecc71; color: white;
+}
+
+/* --- 1/25: GOLD (Złoto) --- */
+.tier-25 .card-front {
+    box-shadow: 0 0 40px rgba(241, 196, 15, 0.7), 0 0 15px #f1c40f !important;
+}
+.tier-25 .card-front::after {
+    --shine-color: rgba(241, 196, 15, 0.3);
+    --shine-intense: rgba(255, 223, 0, 0.9);
+}
+.tier-25 .serial-overlay { 
+    background: linear-gradient(90deg, #000, #f1c40f); border: 1px solid #f1c40f; color: black; font-weight: 900;
+}
+
+/* --- 1/10: PINK SAPPHIRE (Różowy Szafir) --- */
+.tier-10 .card-front {
+    box-shadow: 0 0 50px rgba(255, 0, 204, 0.7), 0 0 20px #ff00cc !important;
+}
+.tier-10 .card-front::after {
+    --shine-color: rgba(255, 0, 204, 0.3);
+    --shine-intense: rgba(255, 105, 180, 0.9);
+}
+.tier-10 .serial-overlay { 
+    background: linear-gradient(90deg, #000, #ff00cc); border: 1px solid #ff00cc;
+}
+
+/* --- 1/5: BLUE SAPPHIRE (Niebieski Szafir) --- */
+.tier-5 .card-front {
+    box-shadow: 0 0 60px rgba(0, 210, 255, 0.8), 0 0 25px #00d2ff !important;
+}
+.tier-5 .card-front::after {
+    --shine-color: rgba(0, 210, 255, 0.4);
+    --shine-intense: rgba(0, 255, 255, 1);
+}
+.tier-5 .serial-overlay { 
+    background: linear-gradient(90deg, #000, #00d2ff); border: 1px solid #00d2ff;
+}
+
+/* --- 1/1: RED SAPPHIRE (Unikat - Krwisty) --- */
+.tier-1 .card-front {
+    box-shadow: 0 0 80px rgba(255, 0, 0, 0.9), 0 0 40px #ff0000 !important;
+    animation: pulseAura 2s infinite alternate; /* Pulsująca aura */
+}
+.tier-1 .card-front::after {
+    --shine-color: rgba(255, 0, 0, 0.5);
+    --shine-intense: rgba(255, 50, 50, 1);
+    animation: holoSwipe 2s infinite linear; /* Szybszy błysk */
+}
+.tier-1 .serial-overlay { 
+    background: black; border: 2px solid red; color: red; 
+    box-shadow: 0 0 20px red; font-size: 24px; bottom: 20%;
+}
+
+@keyframes pulseAura {
+    from { box-shadow: 0 0 60px rgba(255, 0, 0, 0.7); }
+    to { box-shadow: 0 0 100px rgba(255, 0, 0, 1); }
+}
+/* --- WELCOME SCREEN --- */
+#welcome-screen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle at center, #1a0b1a 0%, #000 100%);
+    z-index: 2000;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+}
+
+.welcome-content { text-align: center; }
+
+.hero-title {
+    font-size: 80px; font-weight: 900; letter-spacing: 5px;
+    background: linear-gradient(45deg, #ff00cc, #3333ff, #ff00cc);
+    background-size: 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: heroShine 3s infinite linear, heroFloat 3s infinite ease-in-out;
+    margin-bottom: 10px;
+    text-shadow: 0 10px 30px rgba(255, 0, 204, 0.3);
+}
+
+.hero-subtitle {
+    font-size: 24px; color: #aaa; margin-bottom: 50px;
+    font-family: 'Rajdhani', sans-serif;
+}
+
+.hero-buttons { display: flex; gap: 20px; justify-content: center; }
+
+.hero-btn {
+    padding: 15px 40px; font-size: 20px; font-weight: bold;
+    border: none; border-radius: 50px; cursor: pointer;
+    transition: 0.3s; font-family: 'Rajdhani', sans-serif;
+}
+
+.hero-btn.login {
+    background: linear-gradient(90deg, #00d2ff, #3a7bd5); color: white;
+    box-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
+}
+.hero-btn.login:hover { transform: scale(1.1); box-shadow: 0 0 40px rgba(0, 210, 255, 0.6); }
+
+.hero-btn.register {
+    background: transparent; border: 2px solid #ff00cc; color: #ff00cc;
+}
+.hero-btn.register:hover { background: #ff00cc; color: white; transform: scale(1.1); }
+
+@keyframes heroShine { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+@keyframes heroFloat { 
+    0%, 100% { transform: translateY(0) rotate(0deg); } 
+    50% { transform: translateY(-15px) rotate(2deg); } 
+}
+/* --- STYLE DLA KOLEKCJI (UPDATE) --- */
+
+/* Nagłówek z sortowaniem */
+.inv-header .header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+#collection-sort {
+    background: #222;
+    color: #fff;
+    border: 1px solid #555;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* Numer ID pod kartą */
+.collection-card-id {
+    /* Upewnij się, że tekst się nie łamie brzydko */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90%;
+    text-align: center;
+}
+
+/* Jeśli posiadasz kartę, numer jest jaśniejszy */
+.collection-card:not(.unowned) .collection-card-id {
+    color: #aaa;
+    text-shadow: 0 0 2px black;
+}
+/* --- NOWY STYL KOLEKCJI (EPIC 3D & GLOW) --- */
+
+/* Karta w kolekcji - kontener 3D */
+.collection-card {
+    width: 180px; 
+    height: 280px; /* Wyższy, żeby ID się zmieściło */
+    margin: 15px;
+    position: relative;
+    perspective: 1000px; /* Klucz do efektu 3D */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* Wszystko od góry */
+    background: transparent; /* Tło usunięte, bo karta ma własne */
+    z-index: 1;
+    overflow: visible !important;
+}
+
+/* Wewnętrzna warstwa (to ona się obraca) */
+.collection-card-inner {
+    width: 100%;
+    height: 250px; /* Wysokość samej karty */
+    position: relative;
+    border-radius: 8px;
+    transition: transform 0.1s ease-out; /* Płynność ruchu */
+    transform-style: preserve-3d;
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    cursor: pointer;
+    overflow: visible !important; /* Pozwól odznace wystawać */
+}
+
+/* Obrazek karty */
+.collection-card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    border-radius: 8px;
+    display: block;
+    clip-path: inset(0 round 8px);
+}
+
+/* POŚWIATA (GLOW) ZA KARTĄ */
+.collection-card::before {
+    content: '';
+    position: absolute;
+    top: 10px; left: 10px; right: 10px; bottom: 40px; /* Mniejsze niż karta */
+    border-radius: 8px;
+    z-index: -1;
+    filter: blur(15px);
+    opacity: 0.6;
+    transition: opacity 0.3s;
+}
+.collection-card:hover::before { opacity: 1; }
+
+/* Kolory Poświaty */
+.collection-card.rarity-Common::before { background: rgba(255,255,255,0.2); }
+.collection-card.rarity-Rare::before { background: rgba(52, 152, 219, 0.6); box-shadow: 0 0 20px #3498db; }
+.collection-card.rarity-Epic::before { background: rgba(155, 89, 182, 0.6); box-shadow: 0 0 25px #9b59b6; }
+.collection-card.rarity-Legendary::before { background: rgba(241, 196, 15, 0.6); box-shadow: 0 0 30px #f1c40f; }
+
+/* EFEKT SHINE (POŁYSK) */
+.collection-shine {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    border-radius: 8px;
+    background: linear-gradient(
+        135deg, 
+        rgba(255,255,255,0) 0%, 
+        rgba(255,255,255,0) 40%, 
+        rgba(255,255,255,0.4) 50%, 
+        rgba(255,255,255,0) 60%, 
+        rgba(255,255,255,0) 100%
+    );
+    opacity: 0;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+    transition: opacity 0.1s;
+    background-size: 200% 200%; /* Żeby można było przesuwać */
+}
+
+/* Numer ID - TERAZ POD KARTĄ */
+.collection-card-id {
+    margin-top: 10px; /* Odstęp od dołu karty */
+    font-size: 12px;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: bold;
+    color: #888;
+    background: #111;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid #333;
+    z-index: 2; /* Na wierzchu */
+    
+}
+
+/* Styl dla nieposiadanej (Kłódka) */
+.collection-card.unowned .collection-card-inner {
+    filter: grayscale(1) brightness(0.4); /* Szara i ciemna */
+    border: 2px dashed #555;
+    background: #1a1a1d;
+    display: flex; justify-content: center; align-items: center;
+}
+.collection-card.unowned::before { display: none; } /* Brak poświaty */
+/* --- STYL EKWIPUNKU (DODATKI) --- */
+
+/* --- LICZNIK ILOŚCI (PRAWY DOLNY RÓG KARTY) --- */
+.card-qty-badge {
+    position: absolute;
+    bottom: 8px;       /* Odstęp od dołu karty */
+    right: 8px;        /* Odstęp od prawej krawędzi */
+    background: #444;  /* Szare tło */
+    color: white;
+    border: 2px solid #bbb; /* Jasnoszara ramka */
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 11px;
+    font-family: 'Rajdhani', monospace;
+    z-index: 20;       /* Musi być wysoki Z-Index, żeby być nad połyskiem */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.8);
+}
+
+/* --- STYL SAMEJ KARTY W PODGLĄDZIE (JĄDRO PROBLEMU) --- */
+.collection-card.preview-big {
+    /* SZTYWNE WYMIARY - Betonujemy rozmiar */
+    width: 360px !important;   
+    height: 520px !important;  
+    
+    /* Zabezpieczenie przed ściskaniem przez Flexbox */
+    min-width: 360px !important;
+    min-height: 520px !important;
+    flex: 0 0 auto !important; 
+    
+    margin: 0 !important;
+    z-index: 100;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    object-fit: contain !important;
+}
+/* Wewnętrzny obrazek */
+.collection-card.preview-big .collection-card-img {
+    object-fit: contain !important; 
+    width: 100%;
+    height: 100%;
+    background: transparent; /* Brak tła pod obrazkiem */
+    border-radius: 0; /* PNG ma swoje rogi, nie potrzebujemy CSSowych */
+    box-shadow: none !important; /* Usuwamy cienie z samego obrazka */
+}
+.collection-card.preview-big .collection-card-inner {
+    background: transparent !important;
+    box-shadow: none !important; /* Usuń cień pudełka */
+    border: none !important;
+}
+
+/* --- ID KARTY W PODGLĄDZIE (Stylizacja) --- */
+.preview-big .collection-card-id {
+    margin-top: 15px;
+    font-size: 16px;
+    padding: 5px 15px;
+    border: 1px solid #444;
+    background: #111;
+    color: #ccc;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    /* Upewniamy się, że ID jest pod kartą, a nie na niej */
+    position: relative; 
+    transform: translateZ(0); 
+}
+/* --- FIX: ŁUNY DLA KART NUMEROWANYCH (TIERS) --- */
+/* Nadpisujemy zwykłą rzadkość, jeśli karta ma Tier */
+
+/* Emerald (1/50) - Zielony */
+.collection-card.tier-50::before { background: rgba(46, 204, 113, 0.5); box-shadow: 0 0 40px #2ecc71; }
+.collection-card.tier-50 .collection-card-inner { border: 2px solid #2ecc71; }
+
+/* Gold (1/25) - Złoty */
+.collection-card.tier-25::before { background: rgba(255, 215, 0, 0.5); box-shadow: 0 0 50px gold; }
+.collection-card.tier-25 .collection-card-inner { border: 2px solid gold; }
+
+/* Pink Sapphire (1/10) - Różowy */
+.collection-card.tier-10::before { background: rgba(255, 0, 204, 0.5); box-shadow: 0 0 60px #ff00cc; }
+.collection-card.tier-10 .collection-card-inner { border: 2px solid #ff00cc; }
+
+/* Blue Sapphire (1/5) - Niebieski */
+.collection-card.tier-5::before { background: rgba(0, 210, 255, 0.6); box-shadow: 0 0 70px #00d2ff; }
+.collection-card.tier-5 .collection-card-inner { border: 2px solid #00d2ff; }
+
+/* Red Sapphire (1/1) - Czerwony/Ogień */
+.collection-card.tier-1::before { background: rgba(255, 0, 0, 0.7); box-shadow: 0 0 80px red; }
+.collection-card.tier-1 .collection-card-inner { border: 2px solid red; }
+
+/* Efekt "przejeżdżającej łuny" (Sweep) dla numerowanych */
+.collection-card.numbered .collection-card-inner::after {
+    content: '';
+    position: absolute; top: 0; left: -150%; width: 50%; height: 100%;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.4), transparent);
+    transform: skewX(-25deg);
+    animation: shineSweep 4s infinite;
+    pointer-events: none;
+}
+@keyframes shineSweep { 0% { left: -150%; } 20% { left: 150%; } 100% { left: 150%; } }
+/* ================================================================
+   POPRAWKI WIZUALNE: PODGLĄD I KARTY NUMEROWANE (FINAL)
+   ================================================================ */
+
+
+/* --- 2. BAZOWE RAMKI RZADKOŚCI (Dla kolekcji i ekwipunku) --- */
+/* To definiuje kolor ramki (border). Musi być przed tierami. */
+/* Używamy !important, żeby mieć pewność, że tier tego nie nadpisze */
+.collection-card.rarity-Common .collection-card-inner { border: 2px solid #7f8c8d !important; }
+.collection-card.rarity-Rare .collection-card-inner { border: 2px solid #3498db !important; }
+.collection-card.rarity-Epic .collection-card-inner { border: 2px solid #9b59b6 !important; }
+.collection-card.rarity-Legendary .collection-card-inner { border: 2px solid #f1c40f !important; }
+
+
+/* --- 3. FIX: WYLEWAJĄCA SIĘ ŁUNA (Kluczowa poprawka) --- */
+.collection-card-inner {
+    /* To sprawia, że wszystko co w środku (obrazek, łuna) nie wystaje poza zaokrąglone rogi */
+    overflow: hidden !important; 
+    position: relative; /* Konieczne dla pozycjonowania łuny */
+    background: #000; /* Czarne tło pod spodem */
+}
+
+
+/* --- 4. EFEKT "PRZEJEŻDŻAJĄCEJ ŁUNY" (Automatyczny dla numerowanych) --- */
+/* Selektor .numbered upewnia się, że dotyczy to TYLKO numerowanych */
+.collection-card.numbered .collection-card-inner::after {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%; /* Startujemy daleko poza kartą */
+    width: 200%; height: 200%;
+    
+    /* Gradient używa zmiennej --tier-shine-color, którą ustawimy w tierach */
+    background: linear-gradient(
+        to right,
+        transparent 30%,
+        var(--tier-shine-color, rgba(255,255,255,0.4)) 45%, /* Kolor łuny */
+        var(--tier-shine-color, rgba(255,255,255,0.7)) 50%, /* Jaśniejszy środek */
+        var(--tier-shine-color, rgba(255,255,255,0.4)) 55%,
+        transparent 70%
+    );
+    
+    transform: rotate(25deg); /* Lekki kąt */
+    animation: automatedSweep 6s infinite linear; /* Wolniejsza, płynna animacja */
+    pointer-events: none;
+    mix-blend-mode: plus-lighter; /* Ładniejsze mieszanie światła */
+    z-index: 5; /* Nad obrazkiem, pod odznakami */
+    opacity: 0.8;
+}
+
+@keyframes automatedSweep {
+    0% { transform: translateX(-150%) rotate(25deg); }
+    100% { transform: translateX(150%) rotate(25deg); }
+}
+
+
+/* --- 5. KONFIGURACJA TIERÓW (Tylko GLOW i Kolor Łuny, BEZ RAMEK) --- */
+
+/* Emerald (1/50) - Zielony */
+.collection-card.tier-50 { 
+    --tier-shine-color: #2ecc71; /* Ustawiamy kolor dla ::after */
+}
+.collection-card.tier-50::before { 
+    /* Tylko tylna poświata (Glow) */
+    background: rgba(46, 204, 113, 0.3); 
+    box-shadow: 0 0 50px rgba(46, 204, 113, 0.6);
+    opacity: 0.7;
+}
+
+/* Gold (1/25) - Złoty */
+.collection-card.tier-25 { 
+    --tier-shine-color: gold; 
+}
+.collection-card.tier-25::before { 
+    background: rgba(255, 215, 0, 0.3); 
+    box-shadow: 0 0 60px rgba(255, 215, 0, 0.7);
+    opacity: 0.8;
+}
+
+/* Pink Sapphire (1/10) - Różowy */
+.collection-card.tier-10 { 
+    --tier-shine-color: #ff00cc; 
+}
+.collection-card.tier-10::before { 
+    background: rgba(255, 0, 204, 0.3); 
+    box-shadow: 0 0 70px rgba(255, 0, 204, 0.7);
+    opacity: 0.8;
+}
+
+/* Blue Sapphire (1/5) - Niebieski */
+.collection-card.tier-5 { 
+    --tier-shine-color: #00d2ff; 
+}
+.collection-card.tier-5::before { 
+    background: rgba(0, 210, 255, 0.4); 
+    box-shadow: 0 0 80px rgba(0, 210, 255, 0.8);
+    opacity: 0.9;
+}
+
+/* Red Sapphire (1/1) - Czerwony */
+.collection-card.tier-1 { 
+    --tier-shine-color: red; 
+}
+.collection-card.tier-1::before { 
+    background: rgba(255, 0, 0, 0.5); 
+    box-shadow: 0 0 100px rgba(255, 0, 0, 0.9);
+    opacity: 1;
+    animation: pulseRedGlow 2s infinite alternate;
+}
+@keyframes pulseRedGlow {
+    from { box-shadow: 0 0 70px rgba(255, 0, 0, 0.7); }
+    to { box-shadow: 0 0 120px rgba(255, 0, 0, 1); }
+}

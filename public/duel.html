@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duel Arena</title>
+    <link rel="stylesheet" href="duel.css">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="duel-wrapper">
+        
+        <div class="side-panel left">
+            <div id="card-preview-box" class="card-preview-box rarity-common">
+                <div class="preview-header"><span id="preview-name">Karta</span><span id="preview-attr">ATTR</span></div>
+                <div class="preview-img-container"><img id="preview-image" src="card_back.png" alt="Card"></div>
+                <div id="preview-level-stars" class="level-stars-bar"></div>
+                <div class="preview-stats">
+                    <div class="stat-box def"><span class="label">DEF</span><span id="preview-def" class="val">0</span></div>
+                    <div class="stat-box atk"><span class="label">ATK</span><span id="preview-atk" class="val">0</span></div>
+                </div>
+                <div class="preview-desc-box"><span class="type-line" id="preview-type-line">[]</span><p id="preview-desc">Info...</p></div>
+            </div>
+            <div class="system-buttons">
+                <button class="side-btn surrender" onclick="surrenderGame()" title="Poddaj się"><span class="icon">🏳️</span></button>
+                <button class="side-btn draw" onclick="offerDraw()" title="Remis"><span class="icon">🤝</span></button>
+            </div>
+        </div>
+
+        <div class="board-container">
+            <div class="hud-top">
+                <div class="avatar opp-avatar" onclick="handleDirectAttack()"></div>
+                <div class="hp-display">
+                    <div class="hp-nums"><span id="opp-name">PRZECIWNIK</span><span id="opp-hp">8000</span></div>
+                    <div class="hp-bar-bg"><div class="hp-bar-fill" style="width:100%"></div></div>
+                </div>
+            </div>
+            <div class="hand-mini" id="opp-hand"></div>
+
+            <div class="player-zone opponent">
+                <div class="field-half top">
+                    <div class="side-slot deck-slot" id="opp-deck"></div>
+                    <div class="grid-area">
+                        <div class="row spell-row" id="opp-spells"><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div></div>
+                        <div class="row monster-row" id="opp-monsters"><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div></div>
+                    </div>
+                    <div class="side-slot gy-slot" id="opp-gy"></div>
+                </div>
+            </div>
+
+            <div class="center-divider"></div>
+
+            <div class="player-zone me">
+                <div class="field-half bottom">
+                    <div class="side-slot gy-slot" id="my-gy"></div>
+                    <div class="grid-area">
+                        <div class="row monster-row" id="my-monsters"><div class="slot zone-m"></div><div class="slot zone-m"></div><div class="slot zone-m"></div><div class="slot zone-m"></div><div class="slot zone-m"></div></div>
+                        <div class="row spell-row" id="my-spells"><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div></div>
+                    </div>
+                    <div class="side-slot deck-slot" id="my-deck"><span id="deck-count">0</span></div>
+                </div>
+            </div>
+
+            <div class="hud-bottom">
+                <div class="avatar my-avatar"></div>
+                <div class="hp-display">
+                    <div class="hp-nums"><span id="my-name">TY</span><span id="my-hp">8000</span></div>
+                    <div class="hp-bar-bg"><div class="hp-bar-fill me" style="width:100%"></div></div>
+                </div>
+            </div>
+            <div class="hand-overlay" id="my-hand"></div>
+        </div>
+
+        <div class="side-panel right">
+            <div class="phase-control">
+                <button id="phase-btn" class="phase-btn" onclick="togglePhaseMenu()">
+                    <span class="phase-label">MAIN 1</span><span class="phase-sub">ZMIEŃ</span>
+                </button>
+            </div>
+            <div class="game-log" id="game-log"><p>Start.</p></div>
+        </div>
+    </div>
+
+    <div id="phase-bar-overlay" class="phase-bar-overlay">
+        <div class="phase-track-container">
+            <h2 style="margin: 0 0 10px 0; color: #ccc; font-size: 16px;">WYBIERZ FAZĘ DO AKTYWACJI</h2>
+            
+            <div class="phase-track" id="phase-track-content">
+                </div>
+            
+            <button class="phase-cancel-btn" onclick="togglePhaseMenu()">ANULUJ</button>
+        </div>
+    </div>
+
+    <div id="card-action-popup" class="card-action-popup" style="display:none;">
+        <button class="action-opt attack" onclick="actionAttack()">⚔️ ATAKUJ</button>
+        <button class="action-opt pos" onclick="actionPosition()">🔄 POZYCJA</button>
+        <button class="action-opt cancel" onclick="closeActionPopup()">❌ ANULUJ</button>
+    </div>
+    
+    <div id="surrender-modal" class="system-modal" style="display:none;"><div class="modal-box"><h3>PODDAĆ SIĘ?</h3><div class="modal-btns"><button onclick="confirmSurrender()">TAK</button><button onclick="closeModal('surrender-modal')">NIE</button></div></div></div>
+    <div id="offer-draw-modal" class="system-modal" style="display:none;"><div class="modal-box"><h3>ZAPROPONOWAĆ REMIS?</h3><div class="modal-btns"><button onclick="confirmOfferDraw()">TAK</button><button onclick="closeModal('offer-draw-modal')">NIE</button></div></div></div>
+    <div id="draw-offer-modal" class="system-modal" style="display:none;"><div class="modal-box"><h3>PROPOZYCJA REMISU</h3><div class="modal-btns"><button onclick="respondDraw(true)">ZGODA</button><button onclick="respondDraw(false)">ODMOWA</button></div></div></div>
+
+    <script src="duel.js"></script>
+</body>
+</html>

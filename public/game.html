@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Arena PvP - Hellerman TCG</title>
+    <link rel="stylesheet" href="game.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="overlay"></div>
+
+    <div id="countdown-overlay" style="display:none;">
+        <div class="countdown-content">
+            <h2>PRZECIWNIK ZNALEZIONY!</h2>
+            <div id="countdown-number">5</div>
+            <p>Przygotuj się do walki...</p>
+        </div>
+    </div>
+
+    <div class="lobby-container">
+        <div class="panel left-panel">
+            <h1 class="neon-title">ARENA PVP</h1>
+            
+            <div class="stats-box">
+                <div class="stat-row">🟢 Online: <span id="stat-online">0</span></div>
+                <div class="stat-row">⚔️ W walce: <span id="stat-playing">0</span></div>
+            </div>
+
+            <div class="create-game-box">
+                <h3>Stwórz Rozgrywkę</h3>
+                <input type="text" id="room-name" placeholder="Nazwa pokoju (np. Arena Noobów)" maxlength="20">
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="is-ranked">
+                    <label for="is-ranked">Mecz Rankingowy 🏆</label>
+                </div>
+                <button class="btn-primary" onclick="createGame()">STWÓRZ STÓŁ</button>
+            </div>
+
+            <button class="btn-secondary" onclick="window.location.href='/'">WRÓĆ DO MENU</button>
+        </div>
+
+        <div class="panel right-panel">
+            <div class="list-header">
+                <h2>DOSTĘPNE GRY</h2>
+                <button class="btn-quick" onclick="quickJoin()">SZYBKA GRA ⚡</button>
+            </div>
+            <div class="games-list" id="games-list">
+                <div class="loading">Szukanie przeciwników...</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Rejestracja</title>
+    <style>body{background:#121212;color:white;font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh}.form{background:#1e1e24;padding:40px;border-radius:10px;text-align:center}input{display:block;width:250px;padding:10px;margin:10px auto;background:#333;border:1px solid #555;color:white;border-radius:5px}button{width:270px;padding:10px;background:#ff416c;border:none;border-radius:5px;cursor:pointer;font-weight:bold;color:white}a{color:#3498db;display:block;margin-top:10px;text-decoration:none}</style>
+</head>
+<body>
+    <div class="form">
+        <h2>Rejestracja</h2>
+        <input type="text" id="u" placeholder="Login">
+        <input type="password" id="p" placeholder="Hasło">
+        <button onclick="r()">Zarejestruj</button>
+        <div id="m" style="color:red;margin-top:10px"></div>
+        <a href="login.html">Mam konto</a>
+    </div>
+    <script>
+        async function r(){
+            const r=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:document.getElementById('u').value,password:document.getElementById('p').value})});
+            const d=await r.json(); if(d.success){alert('Konto utworzone!');location.href='login.html';}else document.getElementById('m').innerText=d.message;
+        }
+    </script>
+</body>
+</html>
