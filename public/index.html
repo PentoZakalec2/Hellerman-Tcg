@@ -7,7 +7,13 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
+    <div id="top-nav-bar">
+        <div class="nav-group">
+            <button class="nav-btn disabled" title="Wkrótce...">🎰 KASYNO</button>
+            <button class="nav-btn" onclick="openFriendsPanel()">👥 ZNAJOMI</button>
+            <button class="nav-btn disabled" title="Wkrótce...">🏆 RANKING</button>
+        </div>
+    </div>
     <div id="welcome-screen" style="display: flex;">
         <div class="welcome-content">
             <h1 class="hero-title">HELLERMAN TCG</h1>
@@ -160,6 +166,64 @@
 
         <div class="market-content" id="market-list">
             <p style="text-align:center; color:gray; margin-top:20px;">Ładowanie ofert...</p>
+        </div>
+    </div>
+    <div id="friends-panel">
+        <div class="friends-header">
+            <h2>STREFA SPOŁECZNOŚCI</h2>
+            <div class="close-btn" onclick="closeFriendsPanel()">✕</div>
+        </div>
+
+        <div class="friends-content-wrapper">
+            <div class="friends-left-col">
+                <div class="friends-tabs">
+                    <button class="f-tab active" onclick="switchFriendTab('list')">MOI ZNAJOMI</button>
+                    <button class="f-tab" onclick="switchFriendTab('search')">SZUKAJ ZNAJOMYCH</button>
+                </div>
+
+                <div id="friend-tab-list" class="f-tab-content" style="display:block;">
+                    <div id="friend-requests-container"></div> <div class="f-list-header">TWOI ZNAJOMI</div>
+                    <div id="friends-list-container">Ładowanie...</div>
+                </div>
+
+                <div id="friend-tab-search" class="f-tab-content" style="display:none;">
+                    <div class="search-bar-row">
+                        <input type="text" id="friend-search-input" placeholder="Wpisz nick gracza...">
+                        <button class="action-btn purple small" onclick="searchUsers()">ZNAJDŹ</button>
+                    </div>
+                    <div id="search-results-container"></div>
+                </div>
+            </div>
+
+            <div class="friends-right-col">
+                <div class="privacy-box">
+                    <h3>TWOJE USTAWIENIA PRYWATNOŚCI</h3>
+                    <p style="font-size:12px; color:#aaa; margin-bottom:10px;">Zaznacz, co mogą widzieć Twoi znajomi:</p>
+                    <label class="privacy-row">
+                        <input type="checkbox" id="priv-inv" onchange="updatePrivacy()"> 
+                        Publiczny Ekwipunek (Wszystkie karty)
+                    </label>
+                    <label class="privacy-row">
+                        <input type="checkbox" id="priv-coll" onchange="updatePrivacy()"> 
+                        Publiczna Kolekcja (Księga)
+                    </label>
+                    <label class="privacy-row">
+                        <input type="checkbox" id="priv-deck" onchange="updatePrivacy()"> 
+                        Publiczne Talie
+                    </label>
+                </div>
+
+                <div id="friend-preview-area" style="display:none;">
+                    <h3 id="preview-friend-name" style="color:gold;">NICK</h3>
+                    <div class="friend-actions">
+                        <button class="action-btn blue small" onclick="viewFriendData('collection')">ZOBACZ KOLEKCJĘ</button>
+                        <button class="action-btn purple small" onclick="viewFriendData('inventory')">ZOBACZ TORBĘ</button>
+                        <button class="action-btn red small" onclick="removeFriend()">USUŃ ZE ZNAJOMYCH</button>
+                    </div>
+                    <div id="friend-data-display">
+                        </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -425,5 +489,6 @@
     <script src="script-help.js"></script>
     <script src="script-market.js"></script>
     <script src="script-collection.js"></script>
+    <script src="script-friends.js"></script>
 </body>
 </html>
