@@ -13,7 +13,7 @@ const dbConfig = {
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'hellerman_tcg',
     port: process.env.DB_PORT || 3306,
-    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: true } : false // Wymagane dla chmury
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false 
 };
 
 app.use(express.static(path.join(__dirname, 'public')));
