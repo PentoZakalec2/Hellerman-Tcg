@@ -1,0 +1,7 @@
+SELECT * FROM `active_games` LIMIT 1000;
+SELECT * FROM `cards` LIMIT 1000;
+SELECT * FROM `decks` LIMIT 1000;
+SELECT * FROM `market_listings` LIMIT 1000;
+SELECT * FROM `reports` LIMIT 1000;
+SELECT * FROM `user_cards` LIMIT 1000;
+SELECT * FROM `users` LIMIT 1000;
