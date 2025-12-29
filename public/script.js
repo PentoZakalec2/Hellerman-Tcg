@@ -672,8 +672,7 @@ window.showCustomAlert = function(msg) {
     }
 };
 
-/* --- script.js: SHOW PREVIEW (WERSJA CZYSTA - TYLKO OBRAZEK) --- */
-/* --- script.js: SHOW PREVIEW (OSTATECZNA NAPRAWA ID) --- */
+/* --- script.js: TOTALNY FIX PODGLĄDU --- */
 window.showPreview = function(cardData) {
     const modal = document.getElementById('card-preview-modal');
     const container = document.getElementById('preview-card-container');
@@ -682,88 +681,130 @@ window.showPreview = function(cardData) {
     if (!modal || !container) return;
 
     currentPreviewCard = cardData;
-    container.innerHTML = '';
+    container.innerHTML = ''; 
 
-    // 1. KONTENER KARTY
+    // SPRAWDZENIE ŹRÓDŁA
+    const isCollection = (cardData.source === 'collection');
+
+    // Tworzymy główny wrapper
+    const mainWrapper = document.createElement('div');
+    // Przypisujemy klasę w zależności od trybu (CSS to obsłuży)
+    mainWrapper.className = isCollection ? 'preview-layout-split' : 'preview-layout-center';
+
+    // =========================================================
+    // CZĘŚĆ 1: PANEL BOCZNY (Tylko dla Kolekcji!)
+    // =========================================================
+    if (isCollection) {
+        const infoPanel = document.createElement('div');
+        infoPanel.className = 'preview-info-panel';
+        
+        infoPanel.innerHTML = `<div class="info-header">Dostępność Karty</div>`;
+
+        let html = '';
+        
+        // 1. Wersja Nienumerowana
+        const hasUnnumbered = !cardData.is_only_numbered && !cardData.IS_ONLY_NUMBERED;
+        if (hasUnnumbered) {
+            html += `
+            <div class="info-row">
+                <span style="color:#aaa;">Nienumerowana</span>
+                <span class="count-box">∞</span>
+            </div>`;
+        }
+
+        // 2. Wersje Numerowane (Tiery)
+        const tiersStr = cardData.allowed_tiers || cardData.ALLOWED_TIERS || "";
+        if (tiersStr) {
+            const tiers = tiersStr.split(',').map(t => t.trim());
+            tiers.forEach(tier => {
+                // Kolory dla tekstów
+                let color = '#fff';
+                if(tier == '50') color = '#2ecc71'; // Emerald
+                if(tier == '25') color = '#ffd700'; // Gold
+                if(tier == '10') color = '#ff00cc'; // Pink
+                if(tier == '5') color = '#00d2ff';  // Blue
+                if(tier == '1') color = '#ff0000';  // Red
+
+                // ID dla licznika
+                const cId = cardData.id || cardData.card_id;
+                const countId = `count-${cId}-${tier}`;
+
+                html += `
+                <div class="info-row">
+                    <span style="color:${color}; font-weight:bold;">Numerowana 1/${tier}</span>
+                    <span id="${countId}" class="count-box">.../${tier}</span>
+                </div>`;
+            });
+        }
+
+        infoPanel.innerHTML += html;
+
+        // Opis
+        if (cardData.description) {
+            infoPanel.innerHTML += `
+                <div class="info-header" style="margin-top:20px; font-size:14px; border:none; color:#777;">Opis</div>
+                <div style="font-size:13px; color:#bbb; font-style:italic;">"${cardData.description}"</div>
+            `;
+        }
+
+        mainWrapper.appendChild(infoPanel);
+    }
+
+    // =========================================================
+    // CZĘŚĆ 2: SAMA KARTA (Dla obu trybów)
+    // =========================================================
+    // Tworzymy kontener na kartę
+    const cardContainer = document.createElement('div');
+    // Ważne: to centruje kartę w jej kolumnie
+    cardContainer.style.display = 'flex';
+    cardContainer.style.flexDirection = 'column';
+    cardContainer.style.alignItems = 'center';
+
+    // Generowanie HTML karty 3D (Standardowa struktura)
     const wrapper = document.createElement('div');
+    
+    // Klasy CSS
     let classes = `collection-card preview-big rarity-${cardData.rarity}`;
-    // Sprawdzamy is_numbered w różnych wariantach
-    if (cardData.is_numbered || cardData.IS_NUMBERED) classes += ' numbered';
+    if (cardData.is_numbered) classes += ' numbered';
+    if (cardData.max_supply) classes += ` tier-${cardData.max_supply}`;
     wrapper.className = classes;
 
-    // Style inline (blokada zgniatania)
-    wrapper.style.width = "400px"; wrapper.style.height = "560px";
-    wrapper.style.minWidth = "400px"; wrapper.style.minHeight = "560px";
-    wrapper.style.flexShrink = "0"; wrapper.style.margin = "0";
-    wrapper.style.cursor = "default"; wrapper.style.position = "relative";
-    wrapper.style.background = "transparent"; wrapper.style.border = "none"; wrapper.style.boxShadow = "none"; 
-
-    // 2. WNĘTRZE
+    // Struktura wewnętrzna
     const inner = document.createElement('div');
     inner.className = 'collection-card-inner';
-    inner.style.width = "100%"; inner.style.height = "100%";
-    inner.style.border = "none"; inner.style.boxShadow = "none"; 
-    inner.style.background = "transparent"; inner.style.overflow = "visible"; 
 
-    // 3. OBRAZEK
     const img = document.createElement('img');
-    img.src = cardData.image_url || cardData.IMAGE_URL; // Sprawdzamy też wielkie litery
+    img.src = cardData.image_url || cardData.IMAGE_URL;
     img.className = 'collection-card-img';
-    img.style.width = "100%"; img.style.height = "100%";
-    img.style.objectFit = "contain"; img.style.display = "block"; img.style.borderRadius = "0"; 
 
     const shine = document.createElement('div');
     shine.className = 'collection-shine';
-    shine.style.borderRadius = "15px"; 
 
     inner.appendChild(img);
     inner.appendChild(shine);
     wrapper.appendChild(inner);
 
-    // --- 4. FIX ID (PANCERNA WERSJA) ---
+    // ID pod kartą
     const idLabel = document.createElement('div');
     idLabel.className = 'collection-card-id';
+    let idTxt = `#${cardData.card_id || cardData.id || '?'}`;
     
-    // Szukamy ID w różnych możliwych polach, w kolejności priorytetu
-    let finalId = null;
-    if (cardData.card_id != null) finalId = cardData.card_id;       // Ekwipunek, Rynek (zwykle)
-    else if (cardData.id != null) finalId = cardData.id;            // Kolekcja
-    else if (cardData.CARD_ID != null) finalId = cardData.CARD_ID; // Warianty uppercase
-    else if (cardData.ID != null) finalId = cardData.ID;
-
-    // Jeśli nic nie znaleziono, wstawiamy '?'
-    const displayId = finalId !== null ? finalId : '?';
-    let idText = `#${displayId}`;
-
-    // Pobieramy dane o numeracji (też sprawdzając warianty uppercase)
-    const isNumbered = cardData.is_numbered || cardData.IS_NUMBERED;
-    const serialNumber = cardData.serial_number || cardData.SERIAL_NUMBER;
-    const maxSupply = cardData.max_supply || cardData.MAX_SUPPLY;
-
-    // Dodajemy info o numerze seryjnym tylko jeśli mamy komplet danych
-    if (isNumbered && serialNumber != null && maxSupply != null) {
-        idText += ` [${serialNumber}/${maxSupply}]`;
-        idLabel.style.color = "gold";
-        idLabel.style.borderColor = "gold";
+    // Jeśli mamy numer seryjny (Ekwipunek) to go pokazujemy
+    if (cardData.serial_number) {
+        idTxt += ` [${cardData.serial_number}/${cardData.max_supply}]`;
+        idLabel.style.color = 'gold';
+        idLabel.style.borderColor = 'gold';
     }
-    
-    idLabel.innerText = idText;
-    
-    // Pozycjonowanie ID
-    idLabel.style.marginTop = "20px";
-    idLabel.style.zIndex = "10";
-    idLabel.style.position = "relative";
-    
-    wrapper.appendChild(idLabel);
+    idLabel.innerText = idTxt;
 
-    // 5. EFEKT TILT 3D
+    // Logika 3D Tilt (Myszka)
     wrapper.onmousemove = (e) => {
-        const rect = wrapper.getBoundingClientRect();
-        const x = e.clientX - rect.left; const y = e.clientY - rect.top;
-        const cx = rect.width / 2; const cy = rect.height / 2;
-        const rx = ((y - cy) / cy) * -5; const ry = ((x - cx) / cx) * 5;
-        inner.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg) scale(1.0)`;
-        shine.style.backgroundPosition = `${50 + (x/rect.width)*50}% ${50 + (y/rect.height)*50}%`;
+        const r = wrapper.getBoundingClientRect();
+        const x = e.clientX - r.left; const y = e.clientY - r.top;
+        const rx = ((y - r.height/2) / (r.height/2)) * -10; // Max 10 stopni
+        const ry = ((x - r.width/2) / (r.width/2)) * 10;
+        inner.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg) scale(1.02)`;
+        shine.style.backgroundPosition = `${x/r.width*100}% ${y/r.height*100}%`;
         shine.style.opacity = 1;
     };
     wrapper.onmouseleave = () => {
@@ -771,16 +812,67 @@ window.showPreview = function(cardData) {
         shine.style.opacity = 0;
     };
 
-    container.appendChild(wrapper);
+    // Składanie karty
+    cardContainer.appendChild(wrapper);
+    cardContainer.appendChild(idLabel);
+
+    // Dodanie do głównego wrappera
+    mainWrapper.appendChild(cardContainer);
+
+    // WRZUCENIE DO MODALA
+    container.appendChild(mainWrapper);
+
     if (msg) msg.innerText = "";
     
-    // Konfiguracja przycisków (zależna od kontekstu)
+    // Obsługa przycisków
     if (typeof setupPreviewButtons === 'function') {
         setupPreviewButtons(cardData);
     }
     
     modal.style.display = 'flex';
+
+    // =========================================================
+    // CZĘŚĆ 3: POBIERANIE LICZNIKÓW (Tylko Kolekcja + Tiery)
+    // =========================================================
+    if (isCollection) {
+        const tiersStr = cardData.allowed_tiers || cardData.ALLOWED_TIERS;
+        const cId = cardData.id || cardData.card_id;
+        
+        if (tiersStr && typeof fetchCardDropStats === 'function') {
+            fetchCardDropStats(cId, tiersStr);
+        }
+    }
 };
+
+async function fetchCardDropStats(cardId, tiersStr) {
+    const tiers = tiersStr.split(',').map(t => t.trim());
+
+    try {
+        const res = await fetch(`/card-stats?cardId=${cardId}`);
+        const data = await res.json();
+
+        if (data.success) {
+            tiers.forEach(tier => {
+                const el = document.getElementById(`count-${cardId}-${tier}`);
+                if (el) {
+                    // data.stats[tier] to liczba pozostałych kart (np. 13)
+                    const remaining = data.stats[tier] !== undefined ? data.stats[tier] : 0;
+                    
+                    // Kolorowanie: 0 = Czerwony, >0 = Zielony
+                    if (remaining <= 0) {
+                        el.style.color = '#e74c3c';
+                        el.innerText = `0/${tier}`;
+                    } else {
+                        el.style.color = '#2ecc71';
+                        el.innerText = `${remaining}/${tier}`;
+                    }
+                }
+            });
+        }
+    } catch (e) {
+        console.log("Błąd pobierania statystyk dropu");
+    }
+}
 
 // 4. NAPRAWIONA LOGIKA PRZYCISKÓW (ZAMKNIJ / SMASH)
 /* --- script.js: POPRAWIONA OBSŁUGA PRZYCISKÓW PODGLĄDU --- */

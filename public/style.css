@@ -1455,21 +1455,19 @@ body {
 
 /* --- STYL SAMEJ KARTY W PODGLĄDZIE (JĄDRO PROBLEMU) --- */
 .collection-card.preview-big {
-    /* SZTYWNE WYMIARY - Betonujemy rozmiar */
-    width: 360px !important;   
-    height: 520px !important;  
+    /* Zmienione wymiary: Węższa i Wyższa */
+    width: 360px !important;
+    height: 540px !important; 
     
-    /* Zabezpieczenie przed ściskaniem przez Flexbox */
+    /* Betonujemy wymiary, żeby CSS nic nie popsuł */
     min-width: 360px !important;
-    min-height: 520px !important;
-    flex: 0 0 auto !important; 
+    min-height: 540px !important;
+    max-width: 360px !important;
+    max-height: 540px !important;
     
     margin: 0 !important;
+    flex-shrink: 0 !important;
     z-index: 100;
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    object-fit: contain !important;
 }
 /* Wewnętrzny obrazek */
 .collection-card.preview-big .collection-card-img {
@@ -1643,4 +1641,205 @@ body {
 @keyframes pulseRedGlow {
     from { box-shadow: 0 0 70px rgba(255, 0, 0, 0.7); }
     to { box-shadow: 0 0 120px rgba(255, 0, 0, 1); }
+}
+/* --- NOWY UKŁAD PODGLĄDU (INFO PO LEWEJ) --- */
+
+/* Główny kontener flex w modalu */
+.preview-layout-flex {
+    display: flex;
+    align-items: flex-start; /* Wyrównanie do góry */
+    justify-content: center;
+    gap: 40px;
+    flex-wrap: wrap; /* Na telefonach spadnie pod spód */
+    max-width: 1200px;
+    width: 100%;
+}
+
+/* Lewy panel informacyjny */
+.preview-info-side {
+    width: 320px;
+    /* ZABEZPIECZENIE PRZED ZGNIATANIEM: */
+    min-width: 320px;       
+    flex-shrink: 0;
+    
+    background: rgba(10, 10, 15, 0.95);
+    border: 1px solid #444;
+    border-left: 4px solid #9b59b6;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    backdrop-filter: blur(10px);
+}
+
+.info-title {
+    color: white; font-size: 20px; font-weight: 800; 
+    text-transform: uppercase; border-bottom: 1px solid #555; 
+    padding-bottom: 15px; margin-bottom: 5px;
+}
+
+.variant-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 15px; color: #ddd; padding: 8px 0; border-bottom: 1px solid #222;
+}
+.variant-row:last-child { border-bottom: none; }
+
+.variant-name { font-weight: bold; }
+.variant-n { color: #aaa; } 
+.variant-t50 { color: #2ecc71; text-shadow: 0 0 5px rgba(46,204,113,0.3); } 
+.variant-t25 { color: #ffd700; text-shadow: 0 0 5px rgba(255,215,0,0.3); } 
+.variant-t10 { color: #ff00cc; text-shadow: 0 0 5px rgba(255,0,204,0.3); } 
+.variant-t5 { color: #00d2ff; text-shadow: 0 0 5px rgba(0,210,255,0.3); } 
+.variant-t1 { color: #ff0000; text-shadow: 0 0 8px red; }
+
+.supply-count {
+    background: #000;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-family: 'Consolas', monospace;
+    font-weight: bold;
+    color: white;
+    border: 1px solid #333;
+    min-width: 70px;
+    text-align: center;
+}
+
+/* Prawa strona (Karta + Przyciski) */
+.preview-card-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    
+    /* KLUCZOWE: Zapobiega zgniataniu */
+    flex-shrink: 0 !important; 
+    width: auto;
+}
+/* 1. Kontener dla Ekwipunku (Prosty, wycentrowany) */
+.preview-mode-simple {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+/* 2. Kontener dla Kolekcji (Panel + Karta) */
+.preview-mode-split {
+    display: flex;
+    flex-direction: row;     /* Panel obok karty */
+    align-items: center;     /* Wyrównanie w pionie */
+    justify-content: center; /* Wyrównanie w poziomie */
+    gap: 60px;               /* Odstęp między nimi */
+    width: 100%;
+    max-width: 1400px;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* =========================================================
+   OSTATECZNY FIX PODGLĄDU (Metoda Izolacji)
+   ========================================================= */
+
+/* 1. Układ dla KOLEKCJI (Panel + Karta) */
+.preview-layout-split {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start; /* Ważne: wyrównanie do góry, nie rozciąganie */
+    justify-content: center;
+    gap: 50px;
+    width: 100%;
+    height: 100%;
+    padding-top: 40px; /* Odsunięcie od góry */
+}
+
+/* 2. Układ dla EKWIPUNKU (Tylko wycentrowana karta) */
+.preview-layout-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+/* 3. WYGLĄD KARTY W MODALU (Nadpisuje wszystko inne) */
+#preview-card-container .collection-card {
+    /* Sztywne wymiary - to naprawia spłaszczenie */
+    width: 360px !important;
+    height: 520px !important;
+    
+    /* Blokada zmiany rozmiaru */
+    min-width: 360px !important;
+    min-height: 520px !important;
+    max-width: 360px !important;
+    max-height: 520px !important;
+    
+    margin: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    perspective: 1000px;
+    flex-shrink: 0 !important; /* Nie daj się zgnieść panelowi */
+}
+
+/* Wnętrze karty w modalu */
+#preview-card-container .collection-card-inner {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 15px !important;
+    overflow: hidden !important;
+    /* Usuwamy border z innera w podglądzie, bo psuł efekt 3D */
+    border: none !important; 
+    box-shadow: 0 20px 50px rgba(0,0,0,0.8) !important;
+}
+
+/* Obrazek w modalu */
+#preview-card-container .collection-card-img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: fill !important; /* Wypełnij sztywny kontener 360x520 */
+}
+
+/* 4. LEWY PANEL INFORMACYJNY (Stylizacja) */
+.preview-info-panel {
+    width: 300px;
+    min-width: 300px; /* Blokada zgniatania */
+    background: rgba(15, 15, 20, 0.95);
+    border: 1px solid #444;
+    border-left: 4px solid #9b59b6;
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+}
+
+.info-header {
+    color: white; font-size: 18px; font-weight: bold;
+    text-transform: uppercase; border-bottom: 1px solid #555;
+    padding-bottom: 10px; margin-bottom: 5px;
+}
+
+.info-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 14px; color: #ccc; padding: 8px 0; border-bottom: 1px solid #222;
+}
+
+.count-box {
+    background: #000; padding: 3px 8px; border-radius: 4px;
+    border: 1px solid #333; font-family: monospace; color: white;
+}
+
+/* Ukrywamy ID pod kartą w trybie podglądu (opcjonalnie, jeśli przeszkadza) */
+#preview-card-container .collection-card-id {
+    margin-top: 15px !important;
+    font-size: 16px !important;
+    background: #000 !important;
+    padding: 5px 10px !important;
+    border: 1px solid #444 !important;
+    color: gold !important;
 }

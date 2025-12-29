@@ -1087,6 +1087,54 @@ app.post('/api/duel/draw/respond', async (req, res) => {
 });
 
 
+/* --- NAPRAWIONY ENDPOINT: Statystyki dostępności kart --- */
+app.get('/card-stats', async (req, res) => {
+    // Sprawdzamy czy użytkownik zalogowany
+    if (!req.session.userId) return res.json({ success: false });
+    
+    const cardId = req.query.cardId;
+    if (!cardId) return res.json({ success: false });
+
+    // Tworzymy połączenie (tak jak w reszcie Twojego kodu)
+    const connection = await mysql.createConnection(dbConfig);
+
+    try {
+        // 1. Pobierz definicję karty (allowed_tiers)
+        const [cardRows] = await connection.query('SELECT allowed_tiers FROM cards WHERE id = ?', [cardId]);
+        
+        if (cardRows.length === 0) return res.json({ success: false });
+        
+        const tiersStr = cardRows[0].allowed_tiers;
+        if (!tiersStr) return res.json({ success: true, stats: {} });
+
+        const tiers = tiersStr.split(',').map(t => parseInt(t.trim()));
+        const stats = {};
+
+        // 2. Policz ile kart już wypadło
+        for (const tier of tiers) {
+            const [countRows] = await connection.query(
+                'SELECT COUNT(*) as count FROM user_cards WHERE card_id = ? AND max_supply = ?', 
+                [cardId, tier]
+            );
+            const droppedCount = countRows[0].count;
+            
+            // Oblicz ile zostało (Max - Wydropione)
+            let remaining = tier - droppedCount;
+            if (remaining < 0) remaining = 0;
+
+            stats[tier] = remaining;
+        }
+
+        res.json({ success: true, stats: stats });
+
+    } catch (e) {
+        console.error("Błąd stats:", e);
+        res.json({ success: false });
+    } finally {
+        connection.end(); // Bardzo ważne: zamknij połączenie!
+    }
+});
+
 /* --- ZMIANA NA DOLE PLIKU server.js --- */
 
 // Render (i inne chmury) podają port w zmiennej process.env.PORT
