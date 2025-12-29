@@ -76,10 +76,20 @@ app.post('/login', async (req, res) => {
     const connection = await mysql.createConnection(dbConfig);
     try {
         const [users] = await connection.query('SELECT * FROM users WHERE username = ?', [username]);
+        
         if (users.length === 0) return res.json({ success: false, message: "Błąd danych." });
         const user = users[0];
+
+        // --- NOWOŚĆ: Sprawdzenie akceptacji ---
+        // Admin (id=1) wchodzi zawsze, reszta musi mieć is_approved = 1
+        if (user.is_approved === 0 && user.id !== 1) {
+            return res.json({ success: false, message: "Konto czeka na akceptację Administratora." });
+        }
+        // --------------------------------------
+
         const match = await bcrypt.compare(password, user.password_hash);
         if (!match) return res.json({ success: false, message: "Błąd danych." });
+
         req.session.userId = user.id;
         req.session.username = user.username;
         req.session.isAdmin = (user.id === 1);
@@ -1133,6 +1143,41 @@ app.get('/card-stats', async (req, res) => {
     } finally {
         connection.end(); // Bardzo ważne: zamknij połączenie!
     }
+});
+
+/* --- ADMIN: ZARZĄDZANIE UŻYTKOWNIKAMI --- */
+
+// Pobierz listę niezatwierdzonych
+app.get('/admin/pending-users', async (req, res) => {
+    if (!req.session.userId || !req.session.isAdmin) return res.status(403).json({ success: false });
+    const connection = await mysql.createConnection(dbConfig);
+    try {
+        // Pobieramy ID, Nick, Datę i IP (jeśli dodałeś kolumnę IP wcześniej, jak nie to usuń registration_ip z zapytania)
+        const [rows] = await connection.query('SELECT id, username, created_at FROM users WHERE is_approved = 0');
+        res.json({ success: true, users: rows });
+    } catch (e) { res.json({ success: false, error: e.message }); } finally { connection.end(); }
+});
+
+// Zatwierdź gracza
+app.post('/admin/approve-user', async (req, res) => {
+    if (!req.session.userId || !req.session.isAdmin) return res.status(403).json({ success: false });
+    const { targetId } = req.body;
+    const connection = await mysql.createConnection(dbConfig);
+    try {
+        await connection.query('UPDATE users SET is_approved = 1 WHERE id = ?', [targetId]);
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false }); } finally { connection.end(); }
+});
+
+// Odrzuć (Usuń) gracza
+app.post('/admin/reject-user', async (req, res) => {
+    if (!req.session.userId || !req.session.isAdmin) return res.status(403).json({ success: false });
+    const { targetId } = req.body;
+    const connection = await mysql.createConnection(dbConfig);
+    try {
+        await connection.query('DELETE FROM users WHERE id = ?', [targetId]);
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false }); } finally { connection.end(); }
 });
 
 /* --- ZMIANA NA DOLE PLIKU server.js --- */

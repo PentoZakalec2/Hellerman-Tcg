@@ -1309,17 +1309,6 @@ body {
     font-weight: bold;
     cursor: pointer;
 }
-
-/* Numer ID pod kartą */
-.collection-card-id {
-    /* Upewnij się, że tekst się nie łamie brzydko */
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 90%;
-    text-align: center;
-}
-
 /* Jeśli posiadasz kartę, numer jest jaśniejszy */
 .collection-card:not(.unowned) .collection-card-id {
     color: #aaa;
@@ -1452,74 +1441,18 @@ body {
     z-index: 20;       /* Musi być wysoki Z-Index, żeby być nad połyskiem */
     box-shadow: 0 2px 5px rgba(0,0,0,0.8);
 }
-
-/* --- STYL SAMEJ KARTY W PODGLĄDZIE (JĄDRO PROBLEMU) --- */
-.collection-card.preview-big {
-    /* Zmienione wymiary: Węższa i Wyższa */
-    width: 360px !important;
-    height: 540px !important; 
-    
-    /* Betonujemy wymiary, żeby CSS nic nie popsuł */
-    min-width: 360px !important;
-    min-height: 540px !important;
-    max-width: 360px !important;
-    max-height: 540px !important;
-    
-    margin: 0 !important;
-    flex-shrink: 0 !important;
-    z-index: 100;
-}
-/* Wewnętrzny obrazek */
-.collection-card.preview-big .collection-card-img {
-    object-fit: contain !important; 
-    width: 100%;
-    height: 100%;
-    background: transparent; /* Brak tła pod obrazkiem */
-    border-radius: 0; /* PNG ma swoje rogi, nie potrzebujemy CSSowych */
-    box-shadow: none !important; /* Usuwamy cienie z samego obrazka */
-}
-.collection-card.preview-big .collection-card-inner {
-    background: transparent !important;
-    box-shadow: none !important; /* Usuń cień pudełka */
-    border: none !important;
-}
-
-/* --- ID KARTY W PODGLĄDZIE (Stylizacja) --- */
-.preview-big .collection-card-id {
-    margin-top: 15px;
-    font-size: 16px;
-    padding: 5px 15px;
-    border: 1px solid #444;
-    background: #111;
-    color: #ccc;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-    /* Upewniamy się, że ID jest pod kartą, a nie na niej */
-    position: relative; 
-    transform: translateZ(0); 
-}
 /* --- FIX: ŁUNY DLA KART NUMEROWANYCH (TIERS) --- */
 /* Nadpisujemy zwykłą rzadkość, jeśli karta ma Tier */
-
 /* Emerald (1/50) - Zielony */
-.collection-card.tier-50::before { background: rgba(46, 204, 113, 0.5); box-shadow: 0 0 40px #2ecc71; }
 .collection-card.tier-50 .collection-card-inner { border: 2px solid #2ecc71; }
-
 /* Gold (1/25) - Złoty */
-.collection-card.tier-25::before { background: rgba(255, 215, 0, 0.5); box-shadow: 0 0 50px gold; }
 .collection-card.tier-25 .collection-card-inner { border: 2px solid gold; }
-
 /* Pink Sapphire (1/10) - Różowy */
-.collection-card.tier-10::before { background: rgba(255, 0, 204, 0.5); box-shadow: 0 0 60px #ff00cc; }
 .collection-card.tier-10 .collection-card-inner { border: 2px solid #ff00cc; }
-
 /* Blue Sapphire (1/5) - Niebieski */
-.collection-card.tier-5::before { background: rgba(0, 210, 255, 0.6); box-shadow: 0 0 70px #00d2ff; }
 .collection-card.tier-5 .collection-card-inner { border: 2px solid #00d2ff; }
-
 /* Red Sapphire (1/1) - Czerwony/Ogień */
-.collection-card.tier-1::before { background: rgba(255, 0, 0, 0.7); box-shadow: 0 0 80px red; }
 .collection-card.tier-1 .collection-card-inner { border: 2px solid red; }
-
 /* Efekt "przejeżdżającej łuny" (Sweep) dla numerowanych */
 .collection-card.numbered .collection-card-inner::after {
     content: '';
