@@ -1180,6 +1180,242 @@ app.post('/admin/reject-user', async (req, res) => {
     } catch (e) { res.json({ success: false }); } finally { connection.end(); }
 });
 
+/* =========================================
+   7. SYSTEM ZNAJOMYCH I PRYWATNOŚCI (NAPRAWIONY)
+   ========================================= */
+
+// 1. Pobierz listę znajomych i zaproszeń
+app.get('/api/friends/list', async (req, res) => {
+    if (!req.session.userId) return res.json({ success: false });
+    const me = req.session.userId;
+    
+    // Używamy dbConfig zamiast pool, żeby zachować spójność z resztą Twojego pliku
+    const connection = await mysql.createConnection(dbConfig);
+    try {
+        // Zaproszenia otrzymane
+        const [requests] = await connection.query(`
+            SELECT f.id, u.username, u.id as user_id 
+            FROM friendships f 
+            JOIN users u ON f.user_id_1 = u.id 
+            WHERE f.user_id_2 = ? AND f.status = 'pending'
+        `, [me]);
+
+        // Znajomi (z zaakceptowanym statusem)
+        // Skomplikowane zapytanie, bo znajomy może być w kolumnie user_1 LUB user_2
+        const [friends] = await connection.query(`
+            SELECT u.id, u.username 
+            FROM friendships f
+            JOIN users u ON (CASE WHEN f.user_id_1 = ? THEN f.user_id_2 ELSE f.user_id_1 END) = u.id
+            WHERE (f.user_id_1 = ? OR f.user_id_2 = ?) AND f.status = 'accepted'
+        `, [me, me, me]);
+
+        res.json({ success: true, requests, friends });
+    } catch (e) { 
+        console.error("Błąd friends list:", e);
+        res.json({ success: false, error: e.message }); 
+    } finally { connection.end(); }
+});
+
+// 2. Szukaj graczy (lub pokaż listę wszystkich)
+app.get('/api/friends/search', async (req, res) => {
+    if (!req.session.userId) return res.json({ success: false });
+    const me = req.session.userId;
+    const query = req.query.q || ''; // Jeśli puste, szukaj wszystkich
+    
+    const connection = await mysql.createConnection(dbConfig);
+    try {
+        let users;
+        if (query.length > 0) {
+            // Szukaj po nicku
+            const [rows] = await connection.query(`
+                SELECT id, username FROM users 
+                WHERE username LIKE ? AND id != ? LIMIT 20
+            `, [`%${query}%`, me]);
+            users = rows;
+        } else {
+            // Pokaż ostatnich 20 graczy (jeśli nic nie wpisano)
+            const [rows] = await connection.query(`
+                SELECT id, username FROM users 
+                WHERE id != ? ORDER BY created_at DESC LIMIT 20
+            `, [me]);
+            users = rows;
+        }
+
+        const results = [];
+        for(let u of users) {
+            // Sprawdź czy już jest jakaś relacja
+            const [rel] = await connection.query(`
+                SELECT * FROM friendships 
+                WHERE (user_id_1 = ? AND user_id_2 = ?) OR (user_id_1 = ? AND user_id_2 = ?)
+            `, [me, u.id, u.id, me]);
+            
+            let statusObj = { id: u.id, username: u.username, is_friend: false, request_sent: false, request_received: false };
+            
+            if(rel.length > 0) {
+                const r = rel[0];
+                if(r.status === 'accepted') statusObj.is_friend = true;
+                else if(r.user_id_1 === me) statusObj.request_sent = true;
+                else statusObj.request_received = true; // To znaczy, że on zaprosił mnie
+            }
+            results.push(statusObj);
+        }
+        res.json({ success: true, users: results });
+    } catch (e) { 
+        console.error("Błąd search:", e);
+        res.json({ success: false, error: "Błąd bazy danych" }); 
+    } finally { connection.end(); }
+});
+
+// 3. Wyślij zaproszenie
+app.post('/api/friends/request', async (req, res) => {
+    if (!req.session.userId) return res.json({ success: false });
+    const me = req.session.userId;
+    const { targetId } = req.body;
+    
+    const connection = await mysql.createConnection(dbConfig);
+    try {
+        // Sprawdź czy już nie ma relacji
+        const [exists] = await connection.query(`SELECT id FROM friendships WHERE (user_id_1 = ? AND user_id_2 = ?) OR (user_id_1 = ? AND user_id_2 = ?)`, [me, targetId, targetId, me]);
+        if(exists.length === 0) {
+            await connection.query(`INSERT INTO friendships (user_id_1, user_id_2, status) VALUES (?, ?, 'pending')`, [me, targetId]);
+        }
+        res.json({ success: true });
+    } catch(e) { res.json({ success: false }); } finally { connection.end(); }
+});
+
+// 4. Odpowiedz na zaproszenie
+app.post('/api/friends/respond', async (req, res) => {
+    if (!req.session.userId) return res.json({ success: false });
+    const { friendshipId, accept } = req.body;
+    
+    const connection = await mysql.createConnection(dbConfig);
+    try {
+        if(accept) {
+            await connection.query(`UPDATE friendships SET status = 'accepted' WHERE id = ?`, [friendshipId]);
+        } else {
+            await connection.query(`DELETE FROM friendships WHERE id = ?`, [friendshipId]);
+        }
+        res.json({ success: true });
+    } catch(e) { res.json({ success: false }); } finally { connection.end(); }
+});
+
+// 5. Usuń znajomego
+app.post('/api/friends/remove', async (req, res) => {
+    if (!req.session.userId) return res.json({ success: false });
+    const me = req.session.userId;
+    const { targetId } = req.body;
+    
+    const connection = await mysql.createConnection(dbConfig);
+    try {
+        await connection.query(`DELETE FROM friendships WHERE (user_id_1 = ? AND user_id_2 = ?) OR (user_id_1 = ? AND user_id_2 = ?)`, [me, targetId, targetId, me]);
+        res.json({ success: true });
+    } catch(e) { res.json({ success: false }); } finally { connection.end(); }
+});
+
+// 6. Zarządzanie Prywatnością (Get/Set)
+app.get('/api/user/privacy', async (req, res) => {
+    if (!req.session.userId) return res.json({ success: false });
+    const connection = await mysql.createConnection(dbConfig);
+    try {
+        const [rows] = await connection.query('SELECT public_inventory, public_collection, public_decks FROM users WHERE id = ?', [req.session.userId]);
+        res.json({ success: true, settings: rows[0] });
+    } catch(e) { res.json({ success: false }); } finally { connection.end(); }
+});
+
+app.post('/api/user/privacy', async (req, res) => {
+    if (!req.session.userId) return res.json({ success: false });
+    const { public_inventory, public_collection, public_decks } = req.body;
+    const connection = await mysql.createConnection(dbConfig);
+    try {
+        await connection.query('UPDATE users SET public_inventory=?, public_collection=?, public_decks=? WHERE id=?', [public_inventory, public_collection, public_decks, req.session.userId]);
+        res.json({ success: true });
+    } catch(e) { res.json({ success: false }); } finally { connection.end(); }
+});
+
+// 7. PODGLĄD DANYCH ZNAJOMEGO
+// 7. PODGLĄD DANYCH ZNAJOMEGO (NAPRAWIONY ID)
+app.get('/api/friends/view/:friendId/:type', async (req, res) => {
+    if (!req.session.userId) return res.json({ success: false, error: "Zaloguj się" });
+    const me = req.session.userId;
+    const friendId = req.params.friendId;
+    const type = req.params.type; 
+
+    const connection = await mysql.createConnection(dbConfig);
+    try {
+        // A. Sprawdź czy to znajomy
+        const [check] = await connection.query(`
+            SELECT status FROM friendships 
+            WHERE ((user_id_1 = ? AND user_id_2 = ?) OR (user_id_1 = ? AND user_id_2 = ?))
+            AND status = 'accepted'
+        `, [me, friendId, friendId, me]);
+
+        if(check.length === 0) return res.json({ success: false, error: "To nie jest Twój znajomy!" });
+
+        // B. Sprawdź prywatność
+        const [settings] = await connection.query('SELECT public_inventory, public_collection, public_decks FROM users WHERE id = ?', [friendId]);
+        const s = settings[0];
+
+        if (type === 'inventory' && !s.public_inventory) return res.json({ success: false, error: "Ekwipunek ukryty." });
+        if (type === 'collection' && !s.public_collection) return res.json({ success: false, error: "Kolekcja ukryta." });
+        if (type === 'deck' && !s.public_decks) return res.json({ success: false, error: "Talie ukryte." });
+
+        // C. Pobierz dane
+        let items = [];
+
+        if (type === 'inventory') {
+            // TU BYŁ BŁĄD: Dodano c.id as card_id
+            const sql = `
+                SELECT c.id as card_id, c.name, c.image_url, c.rarity, c.description, c.allowed_tiers, uc.is_numbered, uc.serial_number, COUNT(*) as quantity 
+                FROM user_cards uc 
+                JOIN cards c ON uc.card_id = c.id 
+                WHERE uc.user_id = ?
+                GROUP BY uc.card_id, uc.is_numbered, uc.serial_number, c.id, c.name, c.image_url, c.rarity, c.description, c.allowed_tiers
+                ORDER BY c.rarity DESC
+            `;
+            const [rows] = await connection.query(sql, [friendId]);
+            items = rows;
+        } 
+        else if (type === 'collection') {
+            // TU TEŻ: Dodano c.id as card_id
+            const sql = `
+                SELECT DISTINCT c.id as card_id, c.name, c.image_url, c.rarity, c.description, c.allowed_tiers, 0 as is_numbered, 1 as quantity
+                FROM user_cards uc 
+                JOIN cards c ON uc.card_id = c.id 
+                WHERE uc.user_id = ? 
+                GROUP BY c.id, c.name, c.image_url, c.rarity, c.description, c.allowed_tiers
+                ORDER BY c.id ASC
+            `;
+            const [rows] = await connection.query(sql, [friendId]);
+            items = rows;
+        }
+        else if (type === 'deck') {
+            // Deck
+            const [decks] = await connection.query('SELECT cards_json FROM decks WHERE user_id = ? AND deck_index = 1', [friendId]);
+            if (decks.length > 0 && decks[0].cards_json) {
+                let cardIds = [];
+                try { cardIds = JSON.parse(decks[0].cards_json); } catch(e) {}
+                if (cardIds.length > 0) {
+                    const placeholders = cardIds.map(() => '?').join(',');
+                    // TU TEŻ: Dodano c.id as card_id
+                    const sql = `
+                        SELECT c.id as card_id, c.name, c.image_url, c.rarity, c.description, c.allowed_tiers, uc.is_numbered, uc.serial_number, 1 as quantity
+                        FROM user_cards uc
+                        JOIN cards c ON uc.card_id = c.id
+                        WHERE uc.id IN (${placeholders})
+                    `;
+                    const [cards] = await connection.query(sql, cardIds);
+                    items = cards;
+                }
+            }
+        }
+
+        res.json({ success: true, items });
+
+    } catch(e) { 
+        console.error(e);
+        res.json({ success: false, error: "Błąd serwera" }); 
+    } finally { connection.end(); }
+});
 /* --- ZMIANA NA DOLE PLIKU server.js --- */
 
 // Render (i inne chmury) podają port w zmiennej process.env.PORT

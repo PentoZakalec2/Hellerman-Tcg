@@ -1776,3 +1776,178 @@ body {
     border: 1px solid #444 !important;
     color: gold !important;
 }
+/* =========================================
+   GÓRNY PASEK I PANEL ZNAJOMYCH
+   ========================================= */
+
+/* Pasek nawigacji na górze */
+#top-nav-bar {
+    position: absolute;
+    top: 0; left: 0; width: 100%;
+    height: 60px;
+    display: flex; justify-content: center; align-items: center;
+    pointer-events: none; /* Żeby nie blokował klikania w grę pod spodem */
+    z-index: 150;
+}
+
+.nav-group {
+    background: rgba(0,0,0,0.8);
+    padding: 5px 20px;
+    border-radius: 0 0 20px 20px;
+    border: 1px solid #444;
+    border-top: none;
+    pointer-events: auto;
+    display: flex; gap: 15px;
+}
+
+.nav-btn {
+    background: transparent; border: 2px solid #9b59b6;
+    color: white; padding: 5px 15px; border-radius: 5px;
+    font-weight: bold; cursor: pointer; transition: 0.2s;
+    font-family: 'Rajdhani', sans-serif; letter-spacing: 1px;
+}
+.nav-btn:hover { background: #9b59b6; transform: translateY(2px); }
+
+.nav-btn.disabled {
+    border-color: #555; color: #888; cursor: not-allowed; position: relative;
+}
+.nav-btn.disabled:hover { transform: none; background: transparent; }
+.nav-btn.disabled::after {
+    content: "WKRÓTCE";
+    position: absolute; top: -10px; right: -10px;
+    font-size: 8px; background: #c0392b; color: white;
+    padding: 2px 4px; border-radius: 4px;
+}
+
+/* --- PANEL ZNAJOMYCH (Slide Down) --- */
+#friends-panel {
+    position: fixed; top: -120%; left: 0; width: 100%; height: 90vh;
+    background: rgba(12, 12, 16, 0.98);
+    border-bottom: 4px solid #3498db;
+    z-index: 600;
+    transition: top 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex; flex-direction: column;
+    box-shadow: 0 10px 50px black;
+}
+#friends-panel.open { top: 0; }
+
+.friends-header {
+    padding: 20px; background: rgba(255,255,255,0.05);
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid #333;
+}
+.friends-header h2 { margin: 0; color: #3498db; letter-spacing: 2px; }
+
+.friends-content-wrapper {
+    display: flex; flex: 1; overflow: hidden;
+}
+
+/* Lewa kolumna (Listy) */
+.friends-left-col {
+    width: 40%; border-right: 1px solid #333;
+    display: flex; flex-direction: column; background: #111;
+}
+
+.friends-tabs { display: flex; border-bottom: 1px solid #333; }
+.f-tab {
+    flex: 1; padding: 15px; background: transparent; border: none;
+    color: #888; font-weight: bold; cursor: pointer; transition: 0.2s;
+    border-bottom: 3px solid transparent;
+}
+.f-tab:hover { color: white; background: #222; }
+.f-tab.active { color: #3498db; border-bottom-color: #3498db; background: #1a1a1d; }
+
+.f-tab-content { flex: 1; overflow-y: auto; padding: 20px; }
+
+.search-bar-row { display: flex; gap: 10px; margin-bottom: 20px; }
+#friend-search-input {
+    flex: 1; padding: 10px; background: #222; border: 1px solid #444; color: white; border-radius: 5px;
+}
+
+/* Lista Graczy */
+.friend-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px; background: #1f1f1f; margin-bottom: 8px; border-radius: 6px;
+    border: 1px solid #333; transition: 0.2s;
+}
+.friend-item:hover { background: #2a2a2a; border-color: #555; }
+.f-name { font-weight: bold; color: white; font-size: 16px; }
+.f-status { font-size: 11px; color: #aaa; }
+
+.friend-item.request { border-left: 3px solid #f1c40f; } /* Żółty pasek dla zaproszeń */
+
+/* Prawa kolumna (Podgląd) */
+.friends-right-col {
+    width: 60%; padding: 30px; display: flex; flex-direction: column; gap: 20px;
+    background: radial-gradient(circle at center, #1a1a1e 0%, #0d0d10 100%);
+    overflow-y: auto;
+}
+
+.privacy-box {
+    background: rgba(0,0,0,0.3); border: 1px solid #444; padding: 15px; border-radius: 10px;
+}
+.privacy-row { display: block; margin-bottom: 8px; cursor: pointer; user-select: none; }
+.privacy-row input { margin-right: 10px; transform: scale(1.2); }
+
+#friend-data-display {
+    margin-top: 20px;
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+}
+/* Miniaturki kart w podglądzie znajomego */
+.mini-friend-card {
+    width: 100px; height: 140px; border-radius: 5px; border: 1px solid #555;
+    background-size: cover; position: relative;
+}
+.mini-friend-card.numbered { border: 2px solid gold; }
+/* --- POPRAWKI UI ZNAJOMYCH --- */
+
+/* Brakujący styl dla niebieskiego przycisku (Talie) */
+.action-btn.blue { 
+    background: linear-gradient(135deg, #2980b9, #3498db); 
+    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.6);
+}
+
+/* Stylizacja miniaturki karty u znajomego */
+.mini-friend-card {
+    width: 110px; 
+    height: 154px; 
+    border-radius: 8px; 
+    border: 1px solid #555;
+    background-size: cover; 
+    background-position: center;
+    position: relative;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    transition: transform 0.2s;
+    cursor: pointer;
+}
+.mini-friend-card:hover {
+    transform: scale(1.1);
+    z-index: 10;
+    box-shadow: 0 0 15px rgba(255,255,255,0.2);
+}
+
+/* Ramki rzadkości dla miniatur */
+.mini-friend-card.rarity-Common { border-color: #7f8c8d; }
+.mini-friend-card.rarity-Rare { border-color: #3498db; }
+.mini-friend-card.rarity-Epic { border-color: #9b59b6; }
+.mini-friend-card.rarity-Legendary { border-color: #f1c40f; box-shadow: 0 0 10px #f1c40f; }
+
+/* Licznik ilości (Prawy dolny róg) */
+.mini-qty-badge {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background: #e74c3c;
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 10px;
+    border: 1px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+/* Numerowane */
+.mini-friend-card.numbered {
+    border: 2px solid gold !important;
+}
