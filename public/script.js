@@ -672,7 +672,7 @@ window.showCustomAlert = function(msg) {
     }
 };
 
-/* --- script.js: TOTALNY FIX PODGLĄDU --- */
+/* --- script.js: showPreview Z OBSŁUGĄ UKRYTYCH KART --- */
 window.showPreview = function(cardData) {
     const modal = document.getElementById('card-preview-modal');
     const container = document.getElementById('preview-card-container');
@@ -680,20 +680,18 @@ window.showPreview = function(cardData) {
     
     if (!modal || !container) return;
 
+    // Sprawdzamy czy karta jest zablokowana (nieposiadana w kolekcji)
+    const isLocked = cardData.is_locked === true;
+
     currentPreviewCard = cardData;
     container.innerHTML = ''; 
 
-    // SPRAWDZENIE ŹRÓDŁA
+    // Ustalanie trybu wyświetlania
     const isCollection = (cardData.source === 'collection');
-
-    // Tworzymy główny wrapper
     const mainWrapper = document.createElement('div');
-    // Przypisujemy klasę w zależności od trybu (CSS to obsłuży)
     mainWrapper.className = isCollection ? 'preview-layout-split' : 'preview-layout-center';
 
-    // =========================================================
-    // CZĘŚĆ 1: PANEL BOCZNY (Tylko dla Kolekcji!)
-    // =========================================================
+    // 1. LEWY PANEL (Tylko dla Kolekcji) - Tu pokazujemy Tiery!
     if (isCollection) {
         const infoPanel = document.createElement('div');
         infoPanel.className = 'preview-info-panel';
@@ -702,7 +700,7 @@ window.showPreview = function(cardData) {
 
         let html = '';
         
-        // 1. Wersja Nienumerowana
+        // Dane o nakładach są JAWNE (zgodnie z życzeniem)
         const hasUnnumbered = !cardData.is_only_numbered && !cardData.IS_ONLY_NUMBERED;
         if (hasUnnumbered) {
             html += `
@@ -712,20 +710,17 @@ window.showPreview = function(cardData) {
             </div>`;
         }
 
-        // 2. Wersje Numerowane (Tiery)
         const tiersStr = cardData.allowed_tiers || cardData.ALLOWED_TIERS || "";
         if (tiersStr) {
             const tiers = tiersStr.split(',').map(t => t.trim());
             tiers.forEach(tier => {
-                // Kolory dla tekstów
                 let color = '#fff';
-                if(tier == '50') color = '#2ecc71'; // Emerald
-                if(tier == '25') color = '#ffd700'; // Gold
-                if(tier == '10') color = '#ff00cc'; // Pink
-                if(tier == '5') color = '#00d2ff';  // Blue
-                if(tier == '1') color = '#ff0000';  // Red
+                if(tier == '50') color = '#2ecc71';
+                if(tier == '25') color = '#ffd700';
+                if(tier == '10') color = '#ff00cc';
+                if(tier == '5') color = '#00d2ff';
+                if(tier == '1') color = '#ff0000';
 
-                // ID dla licznika
                 const cId = cardData.id || cardData.card_id;
                 const countId = `count-${cId}-${tier}`;
 
@@ -735,12 +730,21 @@ window.showPreview = function(cardData) {
                     <span id="${countId}" class="count-box">.../${tier}</span>
                 </div>`;
             });
+        } else if (!hasUnnumbered) {
+             html += `<div class="info-row">Brak wariantów nienumerowanych</div>`;
         }
 
         infoPanel.innerHTML += html;
 
-        // Opis
-        if (cardData.description) {
+        // SEKCJA OPISU (UKRYWAMY JEŚLI ZABLOKOWANA)
+        if (isLocked) {
+            infoPanel.innerHTML += `
+                <div class="info-header" style="margin-top:20px; font-size:14px; border:none; color:#555;">Opis</div>
+                <div style="font-size:13px; color:#777; font-style:italic;">
+                    🔒 Jeszcze nie odblokowałeś tej karty, aby poznać jej opis.
+                </div>
+            `;
+        } else if (cardData.description) {
             infoPanel.innerHTML += `
                 <div class="info-header" style="margin-top:20px; font-size:14px; border:none; color:#777;">Opis</div>
                 <div style="font-size:13px; color:#bbb; font-style:italic;">"${cardData.description}"</div>
@@ -750,94 +754,106 @@ window.showPreview = function(cardData) {
         mainWrapper.appendChild(infoPanel);
     }
 
-    // =========================================================
-    // CZĘŚĆ 2: SAMA KARTA (Dla obu trybów)
-    // =========================================================
-    // Tworzymy kontener na kartę
+    // 2. KARTA 3D (Prawa strona)
     const cardContainer = document.createElement('div');
-    // Ważne: to centruje kartę w jej kolumnie
     cardContainer.style.display = 'flex';
     cardContainer.style.flexDirection = 'column';
     cardContainer.style.alignItems = 'center';
 
-    // Generowanie HTML karty 3D (Standardowa struktura)
     const wrapper = document.createElement('div');
     
-    // Klasy CSS
-    let classes = `collection-card preview-big rarity-${cardData.rarity}`;
-    if (cardData.is_numbered) classes += ' numbered';
-    if (cardData.max_supply) classes += ` tier-${cardData.max_supply}`;
+    // Jeśli zablokowana -> Brak klasy rzadkości (szara ramka/brak ramki)
+    let classes = isLocked ? `collection-card preview-big` : `collection-card preview-big rarity-${cardData.rarity}`;
+    
+    if (!isLocked) {
+        if (cardData.is_numbered) classes += ' numbered';
+        if (cardData.max_supply) classes += ` tier-${cardData.max_supply}`;
+    }
+    
     wrapper.className = classes;
-
-    // Struktura wewnętrzna
+    wrapper.style.cursor = "default";
+    
     const inner = document.createElement('div');
     inner.className = 'collection-card-inner';
 
-    const img = document.createElement('img');
-    img.src = cardData.image_url || cardData.IMAGE_URL;
-    img.className = 'collection-card-img';
+    // OBRAZEK (Ukryty jeśli locked)
+    if (isLocked) {
+        inner.style.background = '#080808'; // Bardzo ciemne tło
+        inner.style.display = 'flex';
+        inner.style.justifyContent = 'center';
+        inner.style.alignItems = 'center';
+        // Duża, szara kłódka
+        inner.innerHTML = `<span style="font-size:100px; filter: grayscale(1); opacity:0.2;">🔒</span>`;
+    } else {
+        const img = document.createElement('img');
+        img.src = cardData.image_url || cardData.IMAGE_URL;
+        img.className = 'collection-card-img';
+        const shine = document.createElement('div');
+        shine.className = 'collection-shine';
+        inner.appendChild(img);
+        inner.appendChild(shine);
+    }
 
-    const shine = document.createElement('div');
-    shine.className = 'collection-shine';
-
-    inner.appendChild(img);
-    inner.appendChild(shine);
     wrapper.appendChild(inner);
 
-    // ID pod kartą
+    // ID / NAZWA (Ukryte jeśli locked)
     const idLabel = document.createElement('div');
     idLabel.className = 'collection-card-id';
-    let idTxt = `#${cardData.card_id || cardData.id || '?'}`;
     
-    // Jeśli mamy numer seryjny (Ekwipunek) to go pokazujemy
-    if (cardData.serial_number) {
-        idTxt += ` [${cardData.serial_number}/${cardData.max_supply}]`;
-        idLabel.style.color = 'gold';
-        idLabel.style.borderColor = 'gold';
+    if (isLocked) {
+        // Pokaż ID, ale ukryj nazwę/wariant
+        idLabel.innerText = `#${cardData.card_id || cardData.id || '?'} [???]`;
+        idLabel.style.color = '#444';
+        idLabel.style.borderColor = '#444';
+    } else {
+        let idTxt = `#${cardData.card_id || cardData.id || '?'}`;
+        if (cardData.serial_number) {
+            idTxt += ` [${cardData.serial_number}/${cardData.max_supply}]`;
+            idLabel.style.color = 'gold';
+            idLabel.style.borderColor = 'gold';
+        }
+        idLabel.innerText = idTxt;
     }
-    idLabel.innerText = idTxt;
 
-    // Logika 3D Tilt (Myszka)
-    wrapper.onmousemove = (e) => {
-        const r = wrapper.getBoundingClientRect();
-        const x = e.clientX - r.left; const y = e.clientY - r.top;
-        const rx = ((y - r.height/2) / (r.height/2)) * -10; // Max 10 stopni
-        const ry = ((x - r.width/2) / (r.width/2)) * 10;
-        inner.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg) scale(1.02)`;
-        shine.style.backgroundPosition = `${x/r.width*100}% ${y/r.height*100}%`;
-        shine.style.opacity = 1;
-    };
-    wrapper.onmouseleave = () => {
-        inner.style.transform = `rotateX(0) rotateY(0) scale(1)`;
-        shine.style.opacity = 0;
-    };
+    // Tilt 3D (Tylko dla odblokowanych, żeby nie zdradzać np. błyszczenia)
+    if (!isLocked) {
+        wrapper.onmousemove = (e) => {
+            const r = wrapper.getBoundingClientRect();
+            const x = e.clientX - r.left; const y = e.clientY - r.top;
+            const rx = ((y - r.height/2) / (r.height/2)) * -10;
+            const ry = ((x - r.width/2) / (r.width/2)) * 10;
+            inner.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg) scale(1.02)`;
+            const shine = inner.querySelector('.collection-shine');
+            if(shine) {
+                shine.style.backgroundPosition = `${x/r.width*100}% ${y/r.height*100}%`;
+                shine.style.opacity = 1;
+            }
+        };
+        wrapper.onmouseleave = () => {
+            inner.style.transform = `rotateX(0) rotateY(0) scale(1)`;
+            const shine = inner.querySelector('.collection-shine');
+            if(shine) shine.style.opacity = 0;
+        };
+    }
 
-    // Składanie karty
     cardContainer.appendChild(wrapper);
     cardContainer.appendChild(idLabel);
-
-    // Dodanie do głównego wrappera
     mainWrapper.appendChild(cardContainer);
-
-    // WRZUCENIE DO MODALA
     container.appendChild(mainWrapper);
 
     if (msg) msg.innerText = "";
     
-    // Obsługa przycisków
+    // Przyciski (dla zablokowanej karty - przyciski akcji są zbędne/ukryte w setupPreviewButtons, ale warto to sprawdzić)
     if (typeof setupPreviewButtons === 'function') {
         setupPreviewButtons(cardData);
     }
     
     modal.style.display = 'flex';
 
-    // =========================================================
-    // CZĘŚĆ 3: POBIERANIE LICZNIKÓW (Tylko Kolekcja + Tiery)
-    // =========================================================
+    // 3. POBIERANIE LICZNIKA (To działa zawsze, nawet dla zablokowanych, o ile są w kolekcji)
     if (isCollection) {
         const tiersStr = cardData.allowed_tiers || cardData.ALLOWED_TIERS;
         const cId = cardData.id || cardData.card_id;
-        
         if (tiersStr && typeof fetchCardDropStats === 'function') {
             fetchCardDropStats(cId, tiersStr);
         }

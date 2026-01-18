@@ -108,6 +108,8 @@ function renderCollection(cardsToRender, ownedIds) {
         inner.className = 'collection-card-inner';
         
         if (isOwned) {
+            // --- WERSJA ODBLOKOWANA (POSIADANA) ---
+            
             // Obrazek
             const img = document.createElement('img');
             img.src = card.image_url;
@@ -122,46 +124,57 @@ function renderCollection(cardsToRender, ownedIds) {
             // LOGIKA 3D TILT
             wrapper.onmousemove = (e) => {
                 const rect = wrapper.getBoundingClientRect();
-                const x = e.clientX - rect.left; // X wewnątrz elementu
-                const y = e.clientY - rect.top;  // Y wewnątrz elementu
-                
-                // Środek karty
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
                 const centerX = rect.width / 2;
                 const centerY = rect.height / 2;
-                
-                // Oblicz rotację (max 15 stopni)
                 const rotateX = ((y - centerY) / centerY) * -15; 
                 const rotateY = ((x - centerX) / centerX) * 15;
 
-                // Aplikuj styl
                 inner.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`;
-                
-                // Przesuń połysk (Shine) przeciwnie do myszki
                 shine.style.backgroundPosition = `${50 + (x/rect.width)*50}% ${50 + (y/rect.height)*50}%`;
                 shine.style.opacity = 1;
             };
 
             wrapper.onmouseleave = () => {
-                inner.style.transform = `rotateX(0) rotateY(0) scale(1)`; // Reset
+                inner.style.transform = `rotateX(0) rotateY(0) scale(1)`;
                 shine.style.opacity = 0;
             };
 
-            // Kliknięcie -> Podgląd
+            // Kliknięcie -> Pełny Podgląd
             wrapper.onclick = () => {
                 if (window.showPreview) {
                     window.showPreview({ 
                         ...card, 
                         quantity: undefined, 
                         is_numbered: false,
-                        source: 'collection' 
+                        source: 'collection',
+                        is_locked: false // Karta odblokowana
                     });
                 }
             };
 
         } else {
-            // Karta nieposiadana (Kłódka)
+            // --- WERSJA ZABLOKOWANA (NIEPOSIADANA) ---
+            
             inner.innerHTML = `<span style="font-size:40px;">🔒</span>`;
-            wrapper.title = "Nie posiadasz: " + card.name;
+            
+            // ZMIANA: Anonimowy tooltip
+            wrapper.title = "Karta nieodkryta"; 
+            
+            // ZMIANA: Umożliwienie kliknięcia (żeby sprawdzić tiery)
+            wrapper.style.cursor = "pointer";
+            wrapper.onclick = () => {
+                if (window.showPreview) {
+                    window.showPreview({ 
+                        ...card, 
+                        quantity: undefined, 
+                        is_numbered: false,
+                        source: 'collection',
+                        is_locked: true // FLAGA: Karta zablokowana
+                    });
+                }
+            };
         }
 
         // Dodaj ID pod kartą
@@ -170,7 +183,7 @@ function renderCollection(cardsToRender, ownedIds) {
         idLabel.innerText = `#${card.id}`;
 
         wrapper.appendChild(inner);
-        wrapper.appendChild(idLabel); // ID jest poza inner, więc się nie obraca (czytelność)
+        wrapper.appendChild(idLabel); 
         
         grid.appendChild(wrapper);
     });
