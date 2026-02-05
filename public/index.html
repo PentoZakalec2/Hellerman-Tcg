@@ -9,7 +9,7 @@
 <body>
     <div id="top-nav-bar">
         <div class="nav-group">
-            <button class="nav-btn disabled" title="Wkrótce...">🎰 KASYNO</button>
+            <button class="nav-btn" onclick="toggleCasinoMenu()">🎰 KASYNO</button>
             <button class="nav-btn" onclick="openFriendsPanel()">👥 ZNAJOMI</button>
             <button class="nav-btn disabled" title="Wkrótce...">🏆 RANKING</button>
         </div>
@@ -26,11 +26,29 @@
         </div>
     </div>
 
-    <div id="wallet-container" style="display:none;">
+    <div id="casino-dropdown">
+        <div class="casino-option" onclick="window.location.href='ruletka.html'">
+            <div class="casino-icon">🎡</div>
+            <div class="casino-label">RULETKA</div>
+        </div>
+        <div class="casino-option disabled">
+            <div class="casino-icon">🃏</div>
+            <div class="casino-label">BLACKJACK</div>
+            <div class="comming-soon">WKRÓTCE</div>
+        </div>
+        <div class="casino-option disabled">
+            <div class="casino-icon">🪙</div>
+            <div class="casino-label">COIN FLIP</div>
+            <div class="comming-soon">WKRÓTCE</div>
+        </div>
+    </div>
+
+    <div id="wallet-container">
         <div class="wallet-item">
             <img src="coin_icon.png" alt="HC">
-            <span id="coin-amount">0</span>
+            <span id="coin-amount">0.00</span>
         </div>
+        
         <div class="wallet-item">
             <img src="shard_icon.png" alt="Shards">
             <div id="shard-display">

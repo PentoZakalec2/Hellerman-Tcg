@@ -1421,6 +1421,173 @@ app.get('/api/friends/view/:friendId/:type', async (req, res) => {
 // Render (i inne chmury) podają port w zmiennej process.env.PORT
 const PORT = process.env.PORT || 3000; 
 
+/* =========================================
+   8. SYSTEM KASYNA (RULETKA - OPTIMIZED & HISTORY)
+   ========================================= */
+
+let rouletteState = {
+    status: 'betting', 
+    timeLeft: 20,      
+    lastResult: 0,     
+    history: []        
+};
+
+let activeBets = {}; 
+let lastActivity = Date.now(); // Czas ostatniej interakcji gracza
+
+// Pomocnicze: Sprawdź wygraną
+function checkWin(bet, resultNum) {
+    if (bet.type === 'number' && parseInt(bet.value) === resultNum) return bet.amount * 36;
+    
+    const reds = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+    const isRed = reds.includes(resultNum);
+    const isBlack = !isRed && resultNum !== 0; 
+    const isEven = (resultNum !== 0 && resultNum % 2 === 0);
+    const isOdd = (resultNum !== 0 && resultNum % 2 !== 0);
+
+    if (bet.type === 'color') {
+        if (bet.value === 'red' && isRed) return bet.amount * 2;
+        if (bet.value === 'black' && isBlack) return bet.amount * 2;
+    }
+    if (bet.type === 'parity') {
+        if (bet.value === 'even' && isEven) return bet.amount * 2;
+        if (bet.value === 'odd' && isOdd) return bet.amount * 2;
+    }
+    return 0;
+}
+
+// Rozliczanie i Zapis Historii
+async function processPayouts(winningNumber) {
+    console.log(`[KASYNO] Wynik: ${winningNumber}. Rozliczam...`);
+    const connection = await mysql.createConnection(dbConfig);
+    
+    // Ustalanie koloru wyniku dla zapisu tekstowego
+    const reds = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+    const resColor = winningNumber === 0 ? 'Zielone' : (reds.includes(winningNumber) ? 'Czerwone' : 'Czarne');
+    const resultStr = `${winningNumber} (${resColor})`;
+
+    try {
+        for (const [userId, bets] of Object.entries(activeBets)) {
+            let totalWin = 0;
+            let totalBet = 0;
+            let betSummary = [];
+
+            // Oblicz wygrane i przygotuj opis
+            for (const bet of bets) {
+                const win = checkWin(bet, winningNumber);
+                totalWin += win;
+                totalBet += bet.amount;
+                
+                // Formatowanie opisu: "Liczba 5 (100)" lub "Czerwone (50)"
+                let typeName = bet.type === 'number' ? `Liczba ${bet.value}` : 
+                               (bet.value === 'red' ? 'Czerwone' : 
+                               (bet.value === 'black' ? 'Czarne' : 
+                               (bet.value === 'even' ? 'Parzyste' : 'Nieparz.')));
+                betSummary.push(`${typeName} [${bet.amount}]`);
+            }
+
+            // Wypłata
+            if (totalWin > 0) {
+                await connection.query('UPDATE users SET hellerman_coins = hellerman_coins + ? WHERE id = ?', [totalWin, userId]);
+            }
+
+            // Zapisz do historii
+            const summaryStr = betSummary.join(', ');
+            await connection.query(
+                `INSERT INTO casino_history (user_id, bet_summary, result_info, total_bet, total_win) VALUES (?, ?, ?, ?, ?)`,
+                [userId, summaryStr, resultStr, totalBet, totalWin]
+            );
+        }
+    } catch(e) { console.error("Błąd kasyna:", e); } 
+    finally { 
+        connection.end(); 
+        activeBets = {}; 
+    }
+}
+
+// GŁÓWNA PĘTLA GRY (Z OPTYMALIZACJĄ)
+setInterval(() => {
+    // 1. Sprawdź czy ktoś gra
+    const now = Date.now();
+    const hasActiveBets = Object.keys(activeBets).length > 0;
+    const isInactive = (now - lastActivity > 15000); // 15 sekund bez aktywności
+
+    // Jeśli nikt nie gra I nie ma zakładów na stole -> STOP (nie odejmuj czasu)
+    if (isInactive && !hasActiveBets && rouletteState.status === 'betting') {
+        return; 
+    }
+
+    // 2. Standardowe odliczanie
+    rouletteState.timeLeft--;
+
+    if (rouletteState.timeLeft <= 0) {
+        if (rouletteState.status === 'betting') {
+            rouletteState.status = 'spinning';
+            rouletteState.timeLeft = 10;
+            
+            const winNum = Math.floor(Math.random() * 37);
+            rouletteState.lastResult = winNum;
+            rouletteState.history.unshift(winNum);
+            if(rouletteState.history.length > 8) rouletteState.history.pop();
+
+            processPayouts(winNum);
+            
+        } else {
+            console.log("[KASYNO] Nowa runda. Czas na zakłady.");
+            rouletteState.status = 'betting';
+            
+            rouletteState.timeLeft = 15; 
+            
+            activeBets = {};
+        }
+    }
+}, 1000);
+
+// API: Stan gry (Aktualizuje aktywność!)
+app.get('/api/casino/roulette/state', (req, res) => {
+    lastActivity = Date.now(); // Ktoś pobrał stan -> gra jest aktywna
+    res.json(rouletteState);
+});
+
+// API: Historia gracza
+app.get('/api/casino/history', async (req, res) => {
+    if (!req.session.userId) return res.json({ success: false });
+    const connection = await mysql.createConnection(dbConfig);
+    try {
+        const [rows] = await connection.query(
+            `SELECT * FROM casino_history WHERE user_id = ? ORDER BY created_at DESC LIMIT 15`, 
+            [req.session.userId]
+        );
+        res.json({ success: true, history: rows });
+    } catch(e) { res.json({ success: false }); } finally { connection.end(); }
+});
+
+// API: Zakład (Aktualizuje aktywność!)
+app.post('/api/casino/roulette/bet', async (req, res) => {
+    if (!req.session.userId) return res.json({ success: false, error: "Zaloguj się" });
+    lastActivity = Date.now(); // Aktywność!
+
+    const { bets } = req.body; 
+    if (rouletteState.status !== 'betting') return res.json({ success: false, error: "Zakłady zamknięte!" });
+    if (!bets || bets.length === 0) return res.json({ success: false, error: "Pusty zakład" });
+
+    const connection = await mysql.createConnection(dbConfig);
+    try {
+        let totalCost = 0;
+        bets.forEach(b => totalCost += b.amount);
+
+        const [user] = await connection.query('SELECT hellerman_coins FROM users WHERE id = ?', [req.session.userId]);
+        if (!user[0] || user[0].hellerman_coins < totalCost) return res.json({ success: false, error: "Brak środków!" });
+
+        await connection.query('UPDATE users SET hellerman_coins = hellerman_coins - ? WHERE id = ?', [totalCost, req.session.userId]);
+
+        if (!activeBets[req.session.userId]) activeBets[req.session.userId] = [];
+        activeBets[req.session.userId].push(...bets);
+
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false, error: "Błąd bazy" }); } finally { connection.end(); }
+});
+
 app.listen(PORT, () => { 
     console.log(`Serwer działa na porcie ${PORT}`); 
 });

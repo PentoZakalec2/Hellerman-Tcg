@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Ruletka</title>
+    <link rel="stylesheet" href="casino.css">
+</head>
+<body>
+
+<div class="casino-header">
+    <button class="back-btn" onclick="window.location.href='index.html'">WYJDŹ</button>
+    
+    <div class="casino-wallet">
+        <img src="coin_icon.png" alt="Coin" class="wallet-icon">
+        <span id="balance">Wczytywanie...</span>
+    </div>
+</div>
+
+<div class="game-container">
+    <div class="wheel-section">
+        <div id="result-zoom" class="zoom-box">
+            <span style="font-size:12px; color:#aaa; display:block;">WYNIK</span>
+            <div id="zoom-number" class="zoom-number text-green">0</div>
+        </div>
+
+        <div class="pointer"></div>
+        <div class="wheel-frame">
+            <div class="wheel-spinner" id="wheel-spinner"></div>
+            <div style="position:absolute; width: 60px; height: 60px; background: radial-gradient(circle, #ffd700, #b8860b); border-radius: 50%; box-shadow: 0 0 10px black; z-index: 5; border: 2px solid #fff;"></div>
+        </div>
+
+        <div class="timer-box">
+            <div class="game-state-text" id="status-text">OCZEKIWANIE...</div>
+            <div class="timer-val" id="timer">00:00</div>
+        </div>
+
+        <div style="margin-top: 20px; font-weight: bold; color: #888;">OSTATNIE WYNIKI:</div>
+        <div class="history-bar" id="history"></div>
+    </div>
+
+    <div class="betting-section">
+        
+        <div class="action-panel">
+            <div class="chip-selector">
+                <div class="chip blue active" onclick="setChip(10, this)">10</div>
+                <div class="chip red" onclick="setChip(50, this)">50</div>
+                <div class="chip purple" onclick="setChip(100, this)">100</div>
+                <div class="chip gold" onclick="setChip(500, this)">500</div>
+            </div>
+            
+            <button id="btn-postaw" class="bet-btn-confirm" onclick="confirmBet()">POSTAW</button>
+        </div>
+
+        <div style="margin-bottom: 5px; color: gold; font-weight: bold;">
+            Wybrany zakład: <span id="selection-info" style="color: white;">Brak</span>
+        </div>
+
+        <div class="bet-table-wrapper">
+            <div class="bet-cell zero" onclick="selectField('number', 0, this)">0</div>
+            <div style="display:contents;" id="numbers-container"></div>
+        </div>
+
+        <div class="special-row">
+            <div class="spec-btn red" onclick="selectField('color', 'red', this)">RED</div>
+            <div class="spec-btn black" onclick="selectField('color', 'black', this)">BLACK</div>
+        </div>
+        <div class="special-row">
+            <div class="spec-btn" onclick="selectField('parity', 'even', this)">EVEN</div>
+            <div class="spec-btn" onclick="selectField('parity', 'odd', this)">ODD</div>
+        </div>
+    </div>
+</div>
+<div class="history-toggle-btn" onclick="toggleHistoryPanel()">
+    📜 HISTORIA
+</div>
+
+<div id="history-panel">
+    <div class="hist-header">
+        <h3>TWOJE GRY (Ostatnie 15)</h3>
+        <div class="close-btn" onclick="toggleHistoryPanel()">✕</div>
+    </div>
+    <div id="history-list-content">
+        <p style="text-align:center; color:#666; margin-top:20px;">Ładowanie...</p>
+    </div>
+</div>
+<script src="script-ruletka.js"></script>
+</body>
+</html>

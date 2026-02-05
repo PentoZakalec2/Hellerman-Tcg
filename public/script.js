@@ -127,14 +127,24 @@ async function updateWallet() {
         const data = await res.json();
         if(data.success) {
             const w = data.wallet;
-            document.getElementById('coin-amount').innerText = w.hellerman_coins;
-            document.getElementById('shard-display').innerHTML = `
-                <span class="s-common">${w.shard_common}</span>/
-                <span class="s-rare">${w.shard_rare}</span>/
-                <span class="s-epic">${w.shard_epic}</span>/
-                <span class="s-legendary">${w.shard_legendary}</span>/
-                <span class="s-secret">${w.shard_secret}</span>
-            `;
+            
+            // Aktualizacja Monet (z formatowaniem 0.00)
+            const coinEl = document.getElementById('coin-amount');
+            if(coinEl) {
+                coinEl.innerText = parseFloat(w.hellerman_coins).toFixed(2);
+            }
+
+            // Aktualizacja Shardów
+            const shardDiv = document.getElementById('shard-display');
+            if(shardDiv) {
+                shardDiv.innerHTML = `
+                    <span class="s-common" style="color:#aaa">${w.shard_common}</span>/
+                    <span class="s-rare" style="color:#3498db">${w.shard_rare}</span>/
+                    <span class="s-epic" style="color:#9b59b6">${w.shard_epic}</span>/
+                    <span class="s-legendary" style="color:#f1c40f">${w.shard_legendary}</span>/
+                    <span class="s-secret" style="color:#e74c3c">${w.shard_secret}</span>
+                `;
+            }
         }
     } catch(e) {}
 }
@@ -1313,6 +1323,14 @@ async function confirmSell(card) {
         }
     } catch(e) { showCustomAlert("Błąd sieci"); }
 }
+
+/* --- script.js --- */
+let isCasinoOpen = false;
+/* ZAKTUALIZUJ TO W PLIKU SCRIPT.JS */
+window.toggleCasinoMenu = function() {
+    const menu = document.getElementById('casino-dropdown');
+    menu.classList.toggle('open');
+};
 /* --- script.js: LOGIKA WYMIANY (SMASH) --- */
 window.confirmSmash = async function() {
     // currentPreviewCard musi być ustawione przez showPreview

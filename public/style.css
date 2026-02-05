@@ -36,36 +36,35 @@ body {
 
 /* --- LEWY GÓRNY RÓG (PORTFEL) --- */
 #wallet-container {
-    position: absolute; 
-    top: 20px; 
-    left: 20px; 
-    z-index: 200;
-    display: flex; 
-    gap: 20px;
-    background: rgba(0, 0, 0, 0.6); 
-    padding: 10px 25px; 
-    border-radius: 30px;
-    border: 1px solid #444;
-    backdrop-filter: blur(5px);
+    position: absolute; top: 20px; left: 20px;
+    display: flex; flex-direction: column; gap: 10px;
+    z-index: 100;
 }
 
 .wallet-item {
-    display: flex; 
-    align-items: center; 
-    gap: 10px;
-    font-family: 'Courier New', monospace; 
-    font-weight: bold; 
-    font-size: 18px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid #555;
+    border-radius: 50px; /* Pełne zaokrąglenie */
+    padding: 5px 15px 5px 5px; /* Więcej miejsca z prawej na tekst */
+    display: flex; align-items: center; gap: 10px;
+    backdrop-filter: blur(5px);
+    transition: 0.3s;
 }
 
-.wallet-item img { 
-    width: 32px; 
-    height: 32px; 
-    filter: drop-shadow(0 0 5px black); 
+.wallet-item:hover {
+    border-color: #aaa; transform: translateX(5px);
+}
+
+.wallet-item img {
+    width: 35px; height: 35px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
 }
 
 /* Kolory cyferek */
-#coin-amount { color: #ffd700; text-shadow: 0 0 5px #b8860b; }
+#coin-amount {
+    font-size: 20px; font-weight: bold; color: #f1c40f;
+    text-shadow: 0 1px 2px black; font-family: 'Segoe UI', sans-serif;
+}
 .s-common { color: #bdc3c7; }
 .s-rare { color: #3498db; }
 .s-epic { color: #9b59b6; }
@@ -1950,4 +1949,47 @@ body {
 /* Numerowane */
 .mini-friend-card.numbered {
     border: 2px solid gold !important;
+}
+
+/* --- NOWE MENU KASYNA (Lepszy wygląd) --- */
+#casino-dropdown {
+    position: fixed; 
+    top: -300px; /* Schowane */
+    left: 50%; transform: translateX(-50%); /* Wyśrodkowane */
+    width: 600px; height: 140px;
+    background: linear-gradient(to bottom, #111, #1a1a1a);
+    border: 2px solid #d4af37; border-top: none;
+    border-radius: 0 0 30px 30px; /* Zaokrąglony dół */
+    box-shadow: 0 10px 50px rgba(0,0,0,0.8), 0 0 20px rgba(212, 175, 55, 0.2);
+    z-index: 2000;
+    display: flex; justify-content: center; align-items: center; gap: 30px;
+    transition: top 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55); /* Efekt sprężyny */
+}
+
+/* Klasa dodawana przez JS, żeby wysunąć menu */
+#casino-dropdown.open { top: 60px; } 
+
+.casino-option {
+    text-align: center; cursor: pointer; position: relative;
+    padding: 10px 20px; border-radius: 15px; transition: 0.3s;
+    background: rgba(255,255,255,0.02); border: 1px solid transparent;
+}
+.casino-option:hover {
+    background: rgba(212, 175, 55, 0.1); border-color: #d4af37; transform: translateY(5px);
+}
+.casino-icon { font-size: 40px; text-shadow: 0 5px 10px black; }
+.casino-label { color: #ddd; font-weight: bold; margin-top: 5px; font-family: 'Rajdhani', sans-serif; }
+
+.casino-option.disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(1); }
+.casino-option.disabled:hover { transform: none; background: transparent; border-color: transparent; }
+
+.comming-soon {
+    position: absolute; top: -5px; right: -5px;
+    background: #c0392b; color: white; font-size: 9px; padding: 2px 6px;
+    border-radius: 4px; font-weight: bold; transform: rotate(15deg);
+}
+
+#shard-display {
+    font-size: 14px; font-weight: bold; color: #ddd;
+    display: flex; gap: 5px;
 }
