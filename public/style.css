@@ -1951,45 +1951,78 @@ body {
     border: 2px solid gold !important;
 }
 
-/* --- NOWE MENU KASYNA (Lepszy wygląd) --- */
+/* --- MODAL KASYNA (Pop-up na środku) --- */
+
+/* 1. TŁO (Backdrop) */
+#casino-backdrop {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85); /* Mocne przyciemnienie */
+    backdrop-filter: blur(5px); /* Rozmycie tła */
+    z-index: 1900;
+    opacity: 0; pointer-events: none; /* Domyślnie ukryte */
+    transition: opacity 0.3s ease;
+}
+#casino-backdrop.open { opacity: 1; pointer-events: all; }
+
+/* 2. OKNO (Modal) */
 #casino-dropdown {
     position: fixed; 
-    top: -300px; /* Schowane */
-    left: 50%; transform: translateX(-50%); /* Wyśrodkowane */
-    width: 600px; height: 140px;
-    background: linear-gradient(to bottom, #111, #1a1a1a);
-    border: 2px solid #d4af37; border-top: none;
-    border-radius: 0 0 30px 30px; /* Zaokrąglony dół */
-    box-shadow: 0 10px 50px rgba(0,0,0,0.8), 0 0 20px rgba(212, 175, 55, 0.2);
+    top: 50%; left: 50%; 
+    transform: translate(-50%, -50%) scale(0.8); /* Domyślnie mniejsze */
+    width: 700px; padding: 40px;
+    background: linear-gradient(135deg, #111 0%, #1a1a1a 100%);
+    border: 3px solid #d4af37; border-radius: 20px;
+    box-shadow: 0 0 50px rgba(212, 175, 55, 0.3), 0 20px 60px black;
     z-index: 2000;
-    display: flex; justify-content: center; align-items: center; gap: 30px;
-    transition: top 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55); /* Efekt sprężyny */
+    opacity: 0; pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Efekt sprężyny */
+    display: flex; flex-direction: column; align-items: center;
 }
 
-/* Klasa dodawana przez JS, żeby wysunąć menu */
-#casino-dropdown.open { top: 60px; } 
+#casino-dropdown.open { 
+    opacity: 1; pointer-events: all;
+    transform: translate(-50%, -50%) scale(1); /* Pełny rozmiar */
+}
+
+/* 3. ELEMENTY WEWNĄTRZ */
+.close-casino-btn {
+    position: absolute; top: 15px; right: 20px;
+    font-size: 24px; color: #555; cursor: pointer;
+    transition: 0.2s; font-weight: bold;
+}
+.close-casino-btn:hover { color: #c0392b; transform: scale(1.2); }
+
+.casino-header-text {
+    font-size: 28px; color: #d4af37; font-weight: bold; margin-bottom: 30px;
+    text-shadow: 0 2px 5px black; letter-spacing: 2px;
+    border-bottom: 1px solid #333; padding-bottom: 10px; width: 100%; text-align: center;
+}
+
+.casino-options-wrapper {
+    display: flex; justify-content: center; gap: 30px; width: 100%;
+}
 
 .casino-option {
+    width: 160px; padding: 20px;
+    background: rgba(255,255,255,0.03); border: 1px solid #333; border-radius: 15px;
     text-align: center; cursor: pointer; position: relative;
-    padding: 10px 20px; border-radius: 15px; transition: 0.3s;
-    background: rgba(255,255,255,0.02); border: 1px solid transparent;
+    transition: 0.3s;
 }
 .casino-option:hover {
-    background: rgba(212, 175, 55, 0.1); border-color: #d4af37; transform: translateY(5px);
+    background: rgba(212, 175, 55, 0.1); border-color: #d4af37; transform: translateY(-10px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
 }
-.casino-icon { font-size: 40px; text-shadow: 0 5px 10px black; }
-.casino-label { color: #ddd; font-weight: bold; margin-top: 5px; font-family: 'Rajdhani', sans-serif; }
 
-.casino-option.disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(1); }
-.casino-option.disabled:hover { transform: none; background: transparent; border-color: transparent; }
+.casino-icon { font-size: 50px; margin-bottom: 10px; display: block; }
+.casino-label { color: white; font-weight: bold; font-size: 18px; margin-bottom: 5px; }
+.casino-desc { font-size: 12px; color: #888; line-height: 1.4; }
+
+.casino-option.disabled { opacity: 0.4; filter: grayscale(1); cursor: not-allowed; }
+.casino-option.disabled:hover { transform: none; border-color: #333; background: transparent; }
 
 .comming-soon {
-    position: absolute; top: -5px; right: -5px;
-    background: #c0392b; color: white; font-size: 9px; padding: 2px 6px;
-    border-radius: 4px; font-weight: bold; transform: rotate(15deg);
-}
-
-#shard-display {
-    font-size: 14px; font-weight: bold; color: #ddd;
-    display: flex; gap: 5px;
+    position: absolute; top: 10px; right: 10px;
+    background: #c0392b; color: white; font-size: 10px; padding: 3px 8px;
+    border-radius: 5px; font-weight: bold; transform: rotate(15deg);
+    box-shadow: 0 2px 5px black;
 }

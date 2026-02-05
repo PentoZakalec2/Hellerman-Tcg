@@ -1324,12 +1324,14 @@ async function confirmSell(card) {
     } catch(e) { showCustomAlert("Błąd sieci"); }
 }
 
-/* --- script.js --- */
-let isCasinoOpen = false;
-/* ZAKTUALIZUJ TO W PLIKU SCRIPT.JS */
+let isCasinoOpen = false
+
 window.toggleCasinoMenu = function() {
     const menu = document.getElementById('casino-dropdown');
+    const backdrop = document.getElementById('casino-backdrop');
+    
     menu.classList.toggle('open');
+    backdrop.classList.toggle('open');
 };
 /* --- script.js: LOGIKA WYMIANY (SMASH) --- */
 window.confirmSmash = async function() {

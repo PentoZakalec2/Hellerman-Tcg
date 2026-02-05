@@ -26,20 +26,31 @@
         </div>
     </div>
 
+    <div id="casino-backdrop" onclick="toggleCasinoMenu()"></div>
+
     <div id="casino-dropdown">
-        <div class="casino-option" onclick="window.location.href='ruletka.html'">
-            <div class="casino-icon">🎡</div>
-            <div class="casino-label">RULETKA</div>
-        </div>
-        <div class="casino-option disabled">
-            <div class="casino-icon">🃏</div>
-            <div class="casino-label">BLACKJACK</div>
-            <div class="comming-soon">WKRÓTCE</div>
-        </div>
-        <div class="casino-option disabled">
-            <div class="casino-icon">🪙</div>
-            <div class="casino-label">COIN FLIP</div>
-            <div class="comming-soon">WKRÓTCE</div>
+        <div class="close-casino-btn" onclick="toggleCasinoMenu()">✕</div>
+
+        <div class="casino-header-text">WYBIERZ GRĘ</div>
+
+        <div class="casino-options-wrapper">
+            <div class="casino-option" onclick="window.location.href='ruletka.html'">
+                <div class="casino-icon">🎡</div>
+                <div class="casino-label">RULETKA</div>
+                <div class="casino-desc">Obstawiaj w czasie rzeczywistym!</div>
+            </div>
+
+            <div class="casino-option disabled">
+                <div class="casino-icon">🃏</div>
+                <div class="casino-label">BLACKJACK</div>
+                <div class="comming-soon">WKRÓTCE</div>
+            </div>
+
+            <div class="casino-option disabled">
+                <div class="casino-icon">🪙</div>
+                <div class="casino-label">COIN FLIP</div>
+                <div class="comming-soon">WKRÓTCE</div>
+            </div>
         </div>
     </div>
 
