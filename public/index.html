@@ -263,22 +263,6 @@
             <div class="close-btn" onclick="closeShop()">✕</div>
         </div>
         <div class="shop-content">
-            <div class="shop-section-title">Darmowe Nagrody</div>
-            <div class="daily-container">
-                <div class="daily-box today" id="daily-today">
-                    <h3>DZIŚ</h3>
-                    <div class="reward-icon" id="daily-icon-today">?</div>
-                    <div class="reward-val" id="daily-val-today">...</div>
-                    <button class="shop-buy-btn" id="daily-claim-btn" onclick="claimDaily()">ODBIERZ</button>
-                </div>
-                <div class="daily-box tomorrow">
-                    <h3>JUTRO...</h3>
-                    <div class="reward-icon" id="daily-icon-tom">?</div>
-                    <div class="reward-val" id="daily-val-tom">...</div>
-                    <div class="lock-overlay">🔒</div>
-                </div>
-            </div>
-
             <div class="shop-section-title">Oferty za Monety</div>
             <div class="shop-grid">
                 <div class="shop-item">
@@ -510,15 +494,105 @@
         <button class="action-btn purple" style="margin-top: 20px;" onclick="document.getElementById('custom-alert').style.display='none'">OK</button>
     </div>
 </div>
+<div class="bottom-right-buttons">
+    <div class="hud-btn daily-btn" onclick="openDailyRewards()">
+        📅 <span id="daily-notification" class="notification-dot" style="display:none;">!</span>
+    </div>
     
-    <div id="help-btn" onclick="openHelpMenu()">?</div>
+    <div class="hud-btn help-btn" onclick="openHelpMenu()">
+        ❓
+    </div>
+</div>
 
-    <script src="script.js"></script>
-    <script src="script-inventory.js"></script> 
-    <script src="script-shop.js"></script>
-    <script src="script-help.js"></script>
-    <script src="script-market.js"></script>
-    <script src="script-collection.js"></script>
-    <script src="script-friends.js"></script>
+<div id="daily-modal" class="modal-overlay" onclick="closeDailyModal(event)">
+    <div class="daily-content">
+        <div class="daily-header">
+            <h2>CODZIENNE LOGOWANIE</h2>
+            <p>Odbieraj nagrody każdego dnia!</p>
+        </div>
+        <div class="daily-grid" id="daily-grid-container"></div>
+        <button class="close-daily-btn" onclick="closeDailyModal()">ZAMKNIJ</button>
+    </div>
+</div>
+
+<div id="help-modal" class="modal-overlay" style="z-index: 2000; display:none;">
+    <div class="help-content">
+        <div class="shop-header"> <h2>CENTRUM POMOCY</h2>
+            <div class="close-btn" onclick="closeHelpMenu()">✕</div>
+        </div>
+
+        <div id="help-menu-main">
+            <button class="help-option-btn" onclick="showDropRates()">📊 Szanse na Drop</button>
+            <button class="help-option-btn" onclick="showReportForm()">🐛 Zgłoś Błąd</button>
+            <button class="help-option-btn" onclick="showSuggestForm()">💡 Zasugeruj Kartę</button>
+            
+            <button class="help-option-btn admin-btn" id="admin-reports-btn" onclick="showAdminReports()" style="display:none; border-color:purple; color:#d6a4ff;">
+                🛡️ Panel Admina
+            </button>
+        </div>
+
+        <div id="help-section-rates" style="display:none;">
+            <h3>Szanse na Drop</h3>
+            <ul id="rates-list" style="text-align:left; padding-left:20px; color:#ccc; max-height:300px; overflow-y:auto;">
+                Loading...
+            </ul>
+            <button class="back-help-btn" onclick="backToHelpMain()">WRÓĆ</button>
+        </div>
+
+        <div id="help-section-report" style="display:none;">
+            <h3>Zgłoś Błąd</h3>
+            <input type="text" id="rep-nick" placeholder="Twój Nick" class="help-input">
+            <input type="text" id="rep-email" placeholder="Email" class="help-input">
+            <input type="text" id="rep-subject" placeholder="Temat" class="help-input">
+            <textarea id="rep-desc" placeholder="Opis..." class="help-input area"></textarea>
+            <button class="action-btn" onclick="submitProblem()">WYŚLIJ</button>
+            <button class="back-help-btn" onclick="backToHelpMain()">WRÓĆ</button>
+        </div>
+
+        <div id="help-section-suggest" style="display:none;">
+            <h3>Zasugeruj Kartę</h3>
+            <input type="text" id="sug-nick" placeholder="Nick" class="help-input">
+            <input type="text" id="sug-name" placeholder="Nazwa Karty" class="help-input">
+            <select id="sug-rarity" class="help-input">
+                <option value="Common">Common</option>
+                <option value="Rare">Rare</option>
+                <option value="Epic">Epic</option>
+                <option value="Legendary">Legendary</option>
+            </select>
+            <select id="sug-type" class="help-input">
+                <option value="Postać">Postać</option>
+                <option value="Pojazd">Pojazd</option>
+                <option value="Budynek">Budynek</option>
+            </select>
+            <input type="text" id="sug-stats" placeholder="Staty (np. 10/10)" class="help-input">
+            <textarea id="sug-desc" placeholder="Opis/Lore..." class="help-input area"></textarea>
+            <input type="text" id="sug-img" placeholder="Link do obrazka (opcjonalne)" class="help-input">
+            <button class="action-btn" onclick="submitSuggestion()">WYŚLIJ</button>
+            <button class="back-help-btn" onclick="backToHelpMain()">WRÓĆ</button>
+        </div>
+
+        <div id="help-section-admin" style="display:none;">
+            <h3 style="color:#d6a4ff">Panel Zgłoszeń</h3>
+            <div id="admin-reports-list" class="admin-list-box"></div>
+            <button class="back-help-btn" onclick="backToHelpMain()">WRÓĆ</button>
+        </div>
+    </div>
+</div>
+
+<div id="custom-alert" class="modal-overlay" style="display:none; z-index: 10000;">
+    <div class="modal-box" style="border-color: #9b59b6;">
+        <h3 style="color: #9b59b6; margin-bottom: 15px;">KOMUNIKAT</h3>
+        <p id="custom-alert-msg" style="font-size: 18px; color: white;">...</p>
+        <button class="action-btn purple" style="margin-top: 20px;" onclick="document.getElementById('custom-alert').style.display='none'">OK</button>
+    </div>
+</div>
+
+<script src="script.js"></script>
+<script src="script-inventory.js"></script> 
+<script src="script-shop.js"></script>
+<script src="script-help.js"></script>
+<script src="script-market.js"></script>
+<script src="script-collection.js"></script>
+<script src="script-friends.js"></script>
 </body>
 </html>

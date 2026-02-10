@@ -1,7 +1,9 @@
-/* --- script-help.js : OBSŁUGA SYSTEMU POMOCY --- */
+/* --- script-help.js : OBSŁUGA SYSTEMU POMOCY (FIXED) --- */
 
 const helpModal = document.getElementById('help-modal');
 const helpMenuMain = document.getElementById('help-menu-main');
+
+// Sekcje pomocy
 const sections = {
     rates: document.getElementById('help-section-rates'),
     report: document.getElementById('help-section-report'),
@@ -11,36 +13,38 @@ const sections = {
 
 // Otwieranie Menu
 function openHelpMenu() {
-    helpModal.style.display = 'flex';
+    if(helpModal) helpModal.style.display = 'flex';
     backToHelpMain(); 
     
-    // Sprawdź czy użytkownik jest adminem (zmienna globalna z window)
+    // Sprawdź czy użytkownik jest adminem
     if (window.isAdmin === true) {
         const adminBtn = document.getElementById('admin-reports-btn');
-        if (adminBtn) {
-            adminBtn.style.display = 'block'; // Odkryj przycisk
-        }
+        if (adminBtn) adminBtn.style.display = 'block';
     }
 }
 
 function closeHelpMenu() {
-    helpModal.style.display = 'none';
+    if(helpModal) helpModal.style.display = 'none';
 }
 
 function backToHelpMain() {
     // Ukryj wszystkie sekcje
-    Object.values(sections).forEach(s => s.style.display = 'none');
+    Object.values(sections).forEach(s => {
+        if(s) s.style.display = 'none';
+    });
     // Pokaż menu główne
-    helpMenuMain.style.display = 'block';
+    if(helpMenuMain) helpMenuMain.style.display = 'block';
 }
 
 // --- 1. PROCENTOWE SZANSE (DYNAMICZNE OBLICZANIE) ---
 async function showDropRates() {
-    document.getElementById('help-menu-main').style.display = 'none';
+    if(helpMenuMain) helpMenuMain.style.display = 'none';
     const section = document.getElementById('help-section-rates');
-    section.style.display = 'block';
+    if(section) section.style.display = 'block';
     
     const list = document.getElementById('rates-list');
+    if(!list) return;
+    
     list.innerHTML = '<li>Ładowanie...</li>';
 
     try {
@@ -51,18 +55,19 @@ async function showDropRates() {
         
         // 1. STANDARDOWE RZADKOŚCI
         html += `<h4 style="margin:5px 0; color:#ddd; border-bottom:1px solid #444;">Standardowe Karty</h4>`;
-        for (const [rarity, chance] of Object.entries(data.rarity)) {
-            // Kolory dla rzadkości
-            let color = '#fff';
-            if(rarity === 'Rare') color = '#3498db';
-            if(rarity === 'Epic') color = '#9b59b6';
-            if(rarity === 'Legendary') color = '#f1c40f';
+        if (data.rarity) {
+            for (const [rarity, chance] of Object.entries(data.rarity)) {
+                let color = '#fff';
+                if(rarity === 'Rare') color = '#3498db';
+                if(rarity === 'Epic') color = '#9b59b6';
+                if(rarity === 'Legendary') color = '#f1c40f';
 
-            html += `<li><span style="color:${color}">${rarity}</span> <span class="rate-val">${(chance * 100).toFixed(0)}%</span></li>`;
+                html += `<li><span style="color:${color}">${rarity}</span> <span class="rate-val">${(chance * 100).toFixed(0)}%</span></li>`;
+            }
         }
         
         // 2. KARTY NUMEROWANE
-        const numChance = (data.numbered_base_chance * 100).toFixed(1); // np. 5.0%
+        const numChance = (data.numbered_base_chance * 100).toFixed(1);
         
         html += `<h4 style="margin:15px 0 5px 0; color:gold; border-bottom:1px solid #444;">Karty Limitowane</h4>`;
         html += `<li><span style="color:cyan;">Szansa na trafienie:</span> <span class="rate-val">${numChance}%</span></li>`;
@@ -70,45 +75,42 @@ async function showDropRates() {
         html += `<div style="font-size:11px; color:#aaa; margin-top:8px; margin-bottom:4px;">Rozkład wariantów (jeśli trafisz limitowaną):</div>`;
         
         // 3. OBLICZANIE SZANS NA KONKRETNY TIER
-        // Najpierw sumujemy wagi (np. 100 + 50 + 20 + 5 + 1 = 176)
         let totalWeight = 0;
-        for (const w of Object.values(data.tiers)) {
-            totalWeight += w;
+        if (data.tiers) {
+            for (const w of Object.values(data.tiers)) {
+                totalWeight += w;
+            }
+
+            const tierInfo = {
+                '50': { name: 'Emerald', color: '#2ecc71' },
+                '25': { name: 'Gold', color: '#f1c40f' },
+                '10': { name: 'Pink Sapphire', color: '#ff00cc' },
+                '5':  { name: 'Blue Sapphire', color: '#00d2ff' },
+                '1':  { name: 'Red Sapphire', color: '#ff0000' }
+            };
+
+            const sortedTiers = Object.keys(data.tiers).sort((a,b) => parseInt(b) - parseInt(a));
+
+            for (const tierKey of sortedTiers) {
+                const weight = data.tiers[tierKey];
+                const percent = (weight / totalWeight) * 100;
+                let percentStr = percent < 1 ? percent.toFixed(2) : percent.toFixed(1);
+                
+                const info = tierInfo[tierKey] || { name: `Nakład /${tierKey}`, color: '#fff' };
+
+                html += `
+                    <li style="display:flex; justify-content:space-between; padding: 2px 0;">
+                        <span>
+                            <span style="color:${info.color}; font-weight:bold;">${info.name}</span> 
+                            <span style="font-size:10px; color:#666;">(1/${tierKey})</span>
+                        </span>
+                        <span class="rate-val" style="color:#ddd;">${percentStr}%</span>
+                    </li>`;
+            }
         }
 
-        // Definicje nazw i kolorów dla tierów (klucz to 'max_supply')
-        const tierInfo = {
-            '50': { name: 'Emerald', color: '#2ecc71' },
-            '25': { name: 'Gold', color: '#f1c40f' },
-            '10': { name: 'Pink Sapphire', color: '#ff00cc' },
-            '5':  { name: 'Blue Sapphire', color: '#00d2ff' },
-            '1':  { name: 'Red Sapphire', color: '#ff0000' }
-        };
-
-        // Sortujemy tiery od najczęstszego (50) do najrzadszego (1)
-        // Klucze w JSON to stringi, więc zamieniamy na liczby do sortowania
-        const sortedTiers = Object.keys(data.tiers).sort((a,b) => parseInt(b) - parseInt(a));
-
-        for (const tierKey of sortedTiers) {
-            const weight = data.tiers[tierKey];
-            const percent = (weight / totalWeight) * 100;
-            
-            // Formatowanie (np. "< 1%" dla bardzo małych, lub dokładna liczba)
-            let percentStr = percent < 1 ? percent.toFixed(2) : percent.toFixed(1);
-            
-            const info = tierInfo[tierKey] || { name: `Nakład /${tierKey}`, color: '#fff' };
-
-            html += `
-                <li style="display:flex; justify-content:space-between; padding: 2px 0;">
-                    <span>
-                        <span style="color:${info.color}; font-weight:bold;">${info.name}</span> 
-                        <span style="font-size:10px; color:#666;">(1/${tierKey})</span>
-                    </span>
-                    <span class="rate-val" style="color:#ddd;">${percentStr}%</span>
-                </li>`;
-        }
-
-        list.innerHTML = html;
+        list.innerHTML = html; // Wstawienie wygenerowanego HTML do listy
+        
     } catch(e) { 
         console.error(e);
         list.innerHTML = '<li style="color:red">Błąd danych</li>'; 
@@ -117,8 +119,8 @@ async function showDropRates() {
 
 // --- 2. ZGŁOŚ PROBLEM ---
 function showReportForm() {
-    helpMenuMain.style.display = 'none';
-    sections.report.style.display = 'block';
+    if(helpMenuMain) helpMenuMain.style.display = 'none';
+    if(sections.report) sections.report.style.display = 'block';
 }
 
 async function submitProblem() {
@@ -142,7 +144,6 @@ async function submitProblem() {
         if(data.success) {
             alert("Zgłoszenie wysłane! Dziękujemy.");
             backToHelpMain();
-            // Czyść pola
             document.getElementById('rep-desc').value = '';
             document.getElementById('rep-subject').value = '';
         } else alert("Błąd serwera");
@@ -151,8 +152,8 @@ async function submitProblem() {
 
 // --- 3. ZASUGERUJ KARTĘ ---
 function showSuggestForm() {
-    helpMenuMain.style.display = 'none';
-    sections.suggest.style.display = 'block';
+    if(helpMenuMain) helpMenuMain.style.display = 'none';
+    if(sections.suggest) sections.suggest.style.display = 'block';
 }
 
 async function submitSuggestion() {
@@ -186,16 +187,15 @@ async function submitSuggestion() {
     } catch(e) { alert("Błąd połączenia"); }
 }
 
-// --- 4. PANEL ADMINA (PODGLĄD) ---
-// --- 4. PANEL ADMINA (PODGLĄD RAPORTÓW + UŻYTKOWNIKÓW) ---
+// --- 4. PANEL ADMINA ---
 async function showAdminReports() {
-    helpMenuMain.style.display = 'none';
-    sections.admin.style.display = 'block';
+    if(helpMenuMain) helpMenuMain.style.display = 'none';
+    if(sections.admin) sections.admin.style.display = 'block';
     
     const container = document.getElementById('admin-reports-list');
-    
-    // Dodajemy przełącznik (Raporty / Użytkownicy) nad listą
-    // Czyścimy, żeby nie duplikować przycisków
+    if(!container) return;
+
+    // Przełącznik nawigacji
     const existingNav = document.getElementById('admin-nav-buttons');
     if (existingNav) existingNav.remove();
 
@@ -207,10 +207,7 @@ async function showAdminReports() {
         <button class="action-btn gold" onclick="loadPendingUsers()">Nowe Konta</button>
     `;
     
-    // Wstawiamy nawigację przed listą (używając insertBefore)
     container.parentNode.insertBefore(nav, container);
-
-    // Domyślnie ładuj raporty
     loadReportsList();
 }
 
@@ -222,21 +219,20 @@ async function loadReportsList() {
         const data = await res.json();
         if(data.success) {
             container.innerHTML = '';
-            if(data.reports.length === 0) container.innerHTML = '<p>Brak zgłoszeń.</p>';
-            data.reports.forEach(rep => {
-                // ... (Twój stary kod renderowania raportów - bez zmian) ...
-                // Skopiuj tu logikę tworzenia div.report-item z poprzedniej wersji pliku
-                // Dla uproszczenia wklejam skrót:
-                const div = document.createElement('div');
-                div.className = `report-item ${rep.type}`;
-                div.innerHTML = `<div><strong>${rep.nickname}</strong>: ${rep.subject || 'Sugestia'}</div><div style="font-size:12px; color:#aaa;">${rep.description}</div>`;
-                container.appendChild(div);
-            });
+            if(!data.reports || data.reports.length === 0) {
+                container.innerHTML = '<p>Brak zgłoszeń.</p>';
+            } else {
+                data.reports.forEach(rep => {
+                    const div = document.createElement('div');
+                    div.className = `report-item ${rep.type || 'problem'}`;
+                    div.innerHTML = `<div><strong>${rep.nickname}</strong>: ${rep.subject || 'Sugestia'}</div><div style="font-size:12px; color:#aaa;">${rep.description}</div>`;
+                    container.appendChild(div);
+                });
+            }
         }
     } catch(e) { container.innerHTML = 'Błąd sieci.'; }
 }
 
-// NOWA FUNKCJA: Lista oczekujących graczy
 async function loadPendingUsers() {
     const container = document.getElementById('admin-reports-list');
     container.innerHTML = 'Pobieranie nowych kont...';
@@ -247,14 +243,14 @@ async function loadPendingUsers() {
         
         if (data.success) {
             container.innerHTML = '';
-            if (data.users.length === 0) {
+            if (!data.users || data.users.length === 0) {
                 container.innerHTML = '<p style="color:#2ecc71;">Brak nowych kont do zatwierdzenia.</p>';
                 return;
             }
 
             data.users.forEach(u => {
                 const div = document.createElement('div');
-                div.className = 'report-item'; // Używamy stylu raportów, bo pasuje
+                div.className = 'report-item';
                 div.style.borderLeftColor = '#3498db';
                 div.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -279,7 +275,7 @@ async function approveUser(id) {
     await fetch('/admin/approve-user', { 
         method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({targetId: id}) 
     });
-    loadPendingUsers(); // Odśwież listę
+    loadPendingUsers();
 }
 
 async function rejectUser(id) {

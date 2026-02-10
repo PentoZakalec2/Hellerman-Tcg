@@ -1380,3 +1380,136 @@ window.confirmSmash = async function() {
         showCustomAlert("Błąd połączenia."); 
     }
 };
+/* --- SYSTEM DZIENNYCH NAGRÓD (Frontend - CLEAN & FIXED) --- */
+
+// Funkcja otwierania okna
+window.openDailyRewards = async function() {
+    const modal = document.getElementById('daily-modal');
+    if(modal) {
+        modal.classList.add('open');
+        await renderDailyGrid(); // Renderuj przy otwarciu
+    }
+};
+
+// Funkcja zamykania okna
+window.closeDailyModal = function(e) {
+    // Zamknij jeśli kliknięto tło, ID modala lub przycisk zamykania
+    if (!e || e.target.id === 'daily-modal' || e.target.classList.contains('close-daily-btn')) {
+        const modal = document.getElementById('daily-modal');
+        if(modal) modal.classList.remove('open');
+    }
+};
+
+// GŁÓWNA FUNKCJA RENDEROWANIA (Ta poprawna!)
+async function renderDailyGrid() {
+    const container = document.getElementById('daily-grid-container');
+    if(!container) return;
+    
+    container.innerHTML = '<p style="color:#aaa;">Ładowanie nagród...</p>';
+
+    try {
+        const res = await fetch('/api/daily-rewards');
+        const data = await res.json();
+
+        if(!data.success) {
+            container.innerHTML = '<p style="color:red;">Błąd ładowania.</p>';
+            return;
+        }
+
+        container.innerHTML = '';
+        const userDay = parseInt(data.day); // Wymuszamy liczbę
+        const canClaim = data.canClaim;
+
+        for (let i = 1; i <= 14; i++) {
+            const reward = data.rewards[i];
+            const div = document.createElement('div');
+            
+            let className = 'day-box';
+            let onClickFn = null;
+            let overlayText = ''; 
+
+            // --- LOGIKA STANÓW ---
+
+            // 1. PRZESZŁOŚĆ (Dni mniejsze niż userDay) -> ODEBRANE
+            if (i < userDay) {
+                className += ' claimed'; 
+            } 
+            
+            // 2. TERAŹNIEJSZOŚĆ (Dzień równy userDay)
+            else if (i === userDay) {
+                if (canClaim) {
+                    // Możesz odebrać -> AKTYWNE
+                    className += ' active';
+                    onClickFn = () => claimReward();
+                } else {
+                    // Już dziś odebrałeś -> CZEKA NA JUTRO (Bez ptaszka!)
+                    className += ' locked cooldown'; 
+                    overlayText = '<div style="position:absolute; bottom:5px; width:100%; text-align:center; font-size:10px; color:#f1c40f; font-weight:bold;">JUTRO</div>';
+                }
+            } 
+            
+            // 3. PRZYSZŁOŚĆ -> ZABLOKOWANE
+            else {
+                className += ' locked';
+            }
+            // ---------------------
+
+            if (i === 7 || i === 14) className += ' special';
+
+            // Ikony
+            let icon = 'coin_icon.png';
+            if (reward.type === 'pack') icon = 'booster.png';
+            if (reward.type === 'card') {
+                 if(reward.val === 6) icon = 'dwarf.png'; 
+                 else if(reward.val === 5) icon = 'cowboy.png'; 
+                 else if(reward.val === 7) icon = 'police.png';
+                 else icon = 'cards_icon.png';
+            }
+
+            div.className = className;
+            if(onClickFn) div.onclick = onClickFn;
+
+            div.innerHTML = `
+                <span class="day-num">Dzień ${i}</span>
+                <img src="${icon}" class="day-reward-img" onerror="this.src='coin_icon.png'">
+                <span class="day-val">${reward.desc}</span>
+                ${overlayText}
+            `;
+            container.appendChild(div);
+        }
+    } catch(e) { 
+        console.error(e);
+        container.innerHTML = '<p>Błąd połączenia.</p>';
+    }
+}
+
+// Funkcja odbierania nagrody
+window.claimReward = async function() {
+    try {
+        const res = await fetch('/api/daily-rewards/claim', { method: 'POST' });
+        const data = await res.json();
+        
+        if (data.success) {
+            alert(data.message);
+            if(typeof updateWallet === 'function') updateWallet(); // Odśwież kasę jeśli funkcja istnieje
+            
+            await renderDailyGrid(); // Odśwież grid (zmieni stan na 'cooldown')
+            
+            // Ukryj kropkę powiadomienia
+            const dot = document.getElementById('daily-notification');
+            if(dot) dot.style.display = 'none';
+        } else {
+            alert(data.error);
+        }
+    } catch(e) { alert("Błąd sieci"); }
+};
+
+// Sprawdź przy starcie gry, czy jest nagroda (żeby zapalić kropkę)
+window.addEventListener('load', () => {
+    fetch('/api/daily-rewards').then(r=>r.json()).then(d => {
+        if(d.success && d.canClaim) {
+             const dot = document.getElementById('daily-notification');
+             if(dot) dot.style.display = 'flex';
+        }
+    }).catch(e=>{});
+});

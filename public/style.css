@@ -2026,3 +2026,136 @@ body {
     border-radius: 5px; font-weight: bold; transform: rotate(15deg);
     box-shadow: 0 2px 5px black;
 }
+/* --- CODZIENNE NAGRODY --- */
+
+/* Kontener na przyciski w prawym dolnym rogu */
+.bottom-right-buttons {
+    position: fixed; bottom: 20px; right: 20px;
+    display: flex; gap: 15px; z-index: 900;
+}
+
+.hud-btn {
+    width: 60px; height: 60px;
+    background: linear-gradient(135deg, #222, #333);
+    border: 2px solid #d4af37; border-radius: 50%;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 30px; cursor: pointer;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    transition: 0.3s; position: relative;
+}
+.hud-btn:hover { transform: scale(1.1); background: #444; }
+
+/* Kropka powiadomienia */
+.notification-dot {
+    position: absolute; top: 0; right: 0;
+    width: 20px; height: 20px; background: #e74c3c;
+    border-radius: 50%; border: 2px solid #222;
+    color: white; font-size: 14px; font-weight: bold;
+    display: flex; justify-content: center; align-items: center;
+    animation: bounce 1s infinite;
+}
+@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+/* MODAL - OKNO NAGRÓD */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 9999; 
+    display: none; /* Domyślnie ukryte */
+    justify-content: center; align-items: center;
+}
+
+.modal-overlay.open {
+    display: flex !important;
+    animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.daily-content {
+    background: linear-gradient(to bottom, #1a1a1a, #0d0d0d);
+    width: 800px; padding: 30px; border-radius: 20px;
+    border: 4px solid #d4af37;
+    box-shadow: 0 0 50px rgba(212, 175, 55, 0.2);
+    text-align: center; position: relative;
+}
+
+.daily-header h2 { color: #d4af37; font-size: 32px; margin: 0 0 10px 0; text-shadow: 0 2px 5px black; }
+.daily-header p { color: #aaa; margin: 0 0 20px 0; }
+
+.daily-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 15px; margin-bottom: 20px;
+}
+
+/* Pojedynczy dzień */
+.day-box {
+    background: rgba(255,255,255,0.05); border: 2px solid #444; border-radius: 10px;
+    padding: 10px; min-height: 100px;
+    display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+    position: relative; transition: 0.3s;
+}
+
+.day-num { font-size: 12px; color: #666; font-weight: bold; align-self: flex-start; }
+.day-reward-img { width: 40px; height: 40px; margin: 5px 0; filter: drop-shadow(0 2px 4px black); }
+.day-val { font-size: 11px; font-weight: bold; color: #ddd; }
+
+
+/* --- STANY DNI (WAŻNE POPRAWKI) --- */
+
+/* 1. ODEBRANE (Przeszłość) - TYLKO TU JEST PTASZEK */
+.day-box.claimed {
+    opacity: 0.5; filter: grayscale(1); border-color: #222; cursor: default;
+}
+.day-box.claimed::after {
+    content: '✔';
+    position: absolute;
+    font-size: 40px; color: #2ecc71;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    text-shadow: 0 2px 5px black;
+    z-index: 10;
+}
+
+/* 2. AKTYWNE (Dzisiaj do odebrania) */
+.day-box.active {
+    border-color: #2ecc71; background: rgba(46, 204, 113, 0.1);
+    cursor: pointer; transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(46, 204, 113, 0.4);
+    animation: pulseBorder 2s infinite;
+}
+@keyframes pulseBorder { 0% { border-color: #2ecc71; } 50% { border-color: #fff; } 100% { border-color: #2ecc71; } }
+
+/* 3. COOLDOWN (Czekamy na jutro) - NOWOŚĆ */
+.day-box.cooldown {
+    border-color: #f1c40f; /* Żółta ramka */
+    background: rgba(241, 196, 15, 0.05); /* Lekkie żółte tło */
+    opacity: 0.8;
+    cursor: not-allowed; /* Kursor zakazu */
+    transform: scale(1) !important; /* Blokada powiększania! */
+    animation: none !important; /* Brak pulsowania */
+}
+.day-box.cooldown:hover {
+    background: rgba(241, 196, 15, 0.1); /* Lekka reakcja na najechanie, ale bez szału */
+}
+/* 4. ZABLOKOWANE (Przyszłość) */
+.day-box.locked { opacity: 0.6; }
+
+/* --- ZABEZPIECZENIE (BARDZO WAŻNE) --- */
+/* To gwarantuje, że ptaszek nie pojawi się na zablokowanych ani na cooldownie */
+.day-box.locked::after,
+.day-box.cooldown::after {
+    content: none !important;
+    display: none !important;
+}
+
+/* 5. Dni specjalne */
+.day-box.special {
+    background: rgba(212, 175, 55, 0.1); border-color: #f1c40f;
+}
+.day-box.active:hover { background: rgba(46, 204, 113, 0.2); }
+
+.close-daily-btn {
+    background: #c0392b; color: white; border: none; padding: 10px 30px;
+    font-weight: bold; cursor: pointer; border-radius: 5px; margin-top: 10px;
+}
+.close-daily-btn:hover { background: #e74c3c; }
