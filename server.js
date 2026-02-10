@@ -1588,99 +1588,100 @@ app.post('/api/casino/roulette/bet', async (req, res) => {
     } catch (e) { res.json({ success: false, error: "Błąd bazy" }); } finally { connection.end(); }
 });
 /* =========================================
-   9. SYSTEM DZIENNYCH NAGRÓD (DAILY LOGIN)
+   9. SYSTEM DZIENNYCH NAGRÓD (REWRITE v2)
    ========================================= */
 
-// KONFIGURACJA NAGRÓD (Dzień 1-14)
+// KONFIGURACJA NAGRÓD
 const DAILY_REWARDS = {
     1:  { type: 'coins', val: 50,  desc: "50 HC" },
     2:  { type: 'coins', val: 100, desc: "100 HC" },
-    3:  { type: 'card',  val: 6,   desc: "Karta: Cichy Karzeł" }, // ID 6 (Common)
+    3:  { type: 'card',  val: 6,   desc: "Karta: Cichy Karzeł" }, 
     4:  { type: 'coins', val: 150, desc: "150 HC" },
     5:  { type: 'pack',  val: 1,   desc: "1x Karzeł Pack" },
     6:  { type: 'coins', val: 200, desc: "200 HC" },
-    7:  { type: 'card',  val: 5,   desc: "Karta: Karzeł Kowboj (Rare)" }, // ID 5 (Rare)
+    7:  { type: 'card',  val: 5,   desc: "Karta: Karzeł Kowboj (Rare)" }, 
     8:  { type: 'coins', val: 100, desc: "100 HC" },
     9:  { type: 'coins', val: 250, desc: "250 HC" },
     10: { type: 'pack',  val: 1,   desc: "1x Karzeł Pack" },
     11: { type: 'coins', val: 300, desc: "300 HC" },
-    12: { type: 'card',  val: 7,   desc: "Karta: Policjant (Epic)" }, // ID 7 (Epic)
+    12: { type: 'card',  val: 7,   desc: "Karta: Policjant (Epic)" }, 
     13: { type: 'coins', val: 500, desc: "500 HC" },
     14: { type: 'coins', val: 1000, desc: "JACKPOT: 1000 HC" }
 };
-/* --- server.js : POPRAWIONY ENDPOINT DATY --- */
 
+// API: POBIERZ STAN (GET)
 app.get('/api/daily-rewards', async (req, res) => {
     if (!req.session.userId) return res.json({ success: false });
     const connection = await mysql.createConnection(dbConfig);
     try {
-        // ZAPYTANIE SQL:
-        // days_since_last -> ile dni minęło od ostatniego kliknięcia (do resetu serii)
-        // is_today -> czy ostatnie kliknięcie było DZISIAJ (1 = tak, 0 = nie)
-        const [rows] = await connection.query(
-            `SELECT daily_login_day, last_daily_claim, 
-             DATEDIFF(CURDATE(), DATE(last_daily_claim)) as days_since_last,
-             (DATE(last_daily_claim) = CURDATE()) as is_today
-             FROM users WHERE id = ?`, 
-            [req.session.userId]
-        );
+        // Logika SQL:
+        // days_diff: Ile dni minęło od ostatniego claima? (np. 1 = wczoraj, 0 = dzisiaj)
+        // claimed_today: Czy data ostatniego claima to dzisiaj? (1 = Tak, 0 = Nie)
+        const [rows] = await connection.query(`
+            SELECT 
+                daily_login_day, 
+                last_daily_claim,
+                DATEDIFF(CURDATE(), DATE(last_daily_claim)) as days_diff,
+                (DATE(last_daily_claim) = CURDATE()) as claimed_today
+            FROM users WHERE id = ?
+        `, [req.session.userId]);
+
         let user = rows[0];
-        
-        // 1. Logika resetu serii (jeśli minęło więcej niż 1 dzień, a nie jest to pierwsze wejście)
-        // Sprawdzamy czy last_daily_claim nie jest nullem
-        if (user.last_daily_claim && user.days_since_last > 1) {
-            console.log(`[DAILY] Reset serii dla ${req.session.userId}`);
+        let currentDay = user.daily_login_day;
+
+        // 1. LOGIKA RESETU SERII (STREAK)
+        // Jeśli użytkownik kiedyś coś odebrał (last_daily_claim nie jest NULL)
+        // I minęło więcej niż 1 dzień (czyli np. 2 dni temu) -> RESETUJEMY NA DZIEŃ 1
+        if (user.last_daily_claim && user.days_diff > 1) {
+            console.log(`[DAILY] Reset serii dla gracza ${req.session.userId}. Minęło dni: ${user.days_diff}`);
             await connection.query('UPDATE users SET daily_login_day = 1 WHERE id = ?', [req.session.userId]);
-            user.daily_login_day = 1;
+            currentDay = 1;
         }
 
-        // 2. Czy można odebrać?
-        // Można, jeśli ostatnie odbieranie NIE było dzisiaj (is_today === 0)
-        // Jeśli last_daily_claim jest NULL (nowe konto), to is_today będzie 0/null -> czyli można.
-        const claimedToday = (user.is_today === 1);
-        const canClaim = !claimedToday;
-        
+        // 2. CZY MOŻNA ODEBRAĆ?
+        // Można, jeśli NIE odebrano dzisiaj (claimed_today === 0)
+        // Jeśli last_daily_claim jest NULL (nowe konto), to claimed_today też będzie 0 lub NULL -> czyli można.
+        const canClaim = (user.claimed_today !== 1);
+
         res.json({ 
             success: true, 
-            day: user.daily_login_day, 
+            day: currentDay, 
             canClaim: canClaim,
             rewards: DAILY_REWARDS 
         });
+
     } catch(e) { 
         console.error(e);
-        res.json({ success: false }); 
+        res.json({ success: false, error: "Błąd serwera" }); 
     } finally { 
         connection.end(); 
     }
 });
 
-// API: Odbierz nagrodę
+// API: ODBIERZ NAGRODĘ (POST)
 app.post('/api/daily-rewards/claim', async (req, res) => {
     if (!req.session.userId) return res.json({ success: false, error: "Zaloguj się" });
     const connection = await mysql.createConnection(dbConfig);
     
     try {
-        // 1. Sprawdź czy można odebrać
-        const [rows] = await connection.query(
-            'SELECT daily_login_day, last_daily_claim, CURDATE() as today FROM users WHERE id = ?', 
-            [req.session.userId]
-        );
-        const user = rows[0];
-        const lastClaim = user.last_daily_claim ? new Date(user.last_daily_claim).toISOString().split('T')[0] : null;
-        const today = new Date(user.today).toISOString().split('T')[0];
+        // 1. Weryfikacja stanu (ponownie, dla bezpieczeństwa)
+        const [rows] = await connection.query(`
+            SELECT daily_login_day, last_daily_claim, (DATE(last_daily_claim) = CURDATE()) as claimed_today 
+            FROM users WHERE id = ?
+        `, [req.session.userId]);
+        
+        let user = rows[0];
 
-        if (lastClaim === today) {
-            return res.json({ success: false, error: "Wróć jutro!" });
+        if (user.claimed_today === 1) {
+            return res.json({ success: false, error: "Już dziś odebrałeś nagrodę! Wróć jutro." });
         }
 
-        // 2. Pobierz nagrodę dla aktualnego dnia
-        let currentDay = user.daily_login_day;
-        if (currentDay > 14) currentDay = 1; // Reset pętli po 14 dniach (zabezpieczenie)
-        
-        const reward = DAILY_REWARDS[currentDay];
-        if (!reward) return res.json({ success: false, error: "Błąd nagrody" });
+        // 2. Pobierz nagrodę
+        let day = user.daily_login_day;
+        if (day > 14) day = 1; // Safety check
+        const reward = DAILY_REWARDS[day];
 
-        // 3. Przyznaj nagrodę
+        // 3. Przyznaj zasoby
         let msg = "";
         if (reward.type === 'coins') {
             await connection.query('UPDATE users SET hellerman_coins = hellerman_coins + ? WHERE id = ?', [reward.val, req.session.userId]);
@@ -1691,28 +1692,21 @@ app.post('/api/daily-rewards/claim', async (req, res) => {
             msg = `Otrzymano ${reward.val}x Karzeł Pack!`;
         }
         else if (reward.type === 'card') {
-            // Dodaj kartę do ekwipunku
-            await connection.query(
-                'INSERT INTO user_cards (user_id, card_id, is_numbered, obtained_at) VALUES (?, ?, 0, NOW())', 
-                [req.session.userId, reward.val]
-            );
+            await connection.query('INSERT INTO user_cards (user_id, card_id, is_numbered, obtained_at) VALUES (?, ?, 0, NOW())', [req.session.userId, reward.val]);
             msg = `Otrzymano nową kartę!`;
         }
 
-        // 4. Zaktualizuj licznik dnia i datę
-        // Jeśli to był 14 dzień, resetujemy na 1, w przeciwnym razie +1
-        const nextDay = currentDay >= 14 ? 1 : currentDay + 1;
+        // 4. Zaktualizuj licznik i datę
+        const nextDay = (day >= 14) ? 1 : day + 1;
         
-        await connection.query(
-            'UPDATE users SET last_daily_claim = NOW(), daily_login_day = ? WHERE id = ?', 
-            [nextDay, req.session.userId]
-        );
+        // NOW() zapisuje dokładny czas serwera
+        await connection.query('UPDATE users SET last_daily_claim = NOW(), daily_login_day = ? WHERE id = ?', [nextDay, req.session.userId]);
 
-        res.json({ success: true, message: msg, newDay: nextDay });
+        res.json({ success: true, message: msg });
 
     } catch(e) { 
         console.error(e);
-        res.json({ success: false, error: "Błąd serwera" }); 
+        res.json({ success: false, error: "Błąd bazy danych" }); 
     } finally { 
         connection.end(); 
     }
