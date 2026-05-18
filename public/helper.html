@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomocnik Hellermana</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* --- ODBLOKOWANIE PRZEWIJANIA I NAPRAWA UKŁADU (Zabija style.css gry) --- */
+        body {
+            display: block !important; /* Wymusza układ jeden pod drugim */
+            height: auto !important;
+            min-height: 100vh;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            background-attachment: fixed !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        #top-nav-bar {
+            position: relative !important;
+            width: 100% !important;
+            top: 0 !important;
+            left: 0 !important;
+            background: rgba(0, 0, 0, 0.8) !important;
+            padding: 15px !important;
+            box-sizing: border-box !important;
+            display: block !important;
+            z-index: 1000;
+            border-bottom: 2px solid #333;
+        }
+
+        /* --- NIESTANDARDOWY SUWAK PRZEWIJANIA --- */
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; border-radius: 5px; }
+        ::-webkit-scrollbar-thumb { background: #3498db; border-radius: 5px; }
+        ::-webkit-scrollbar-thumb:hover { background: #2980b9; }
+
+        .helper-container { 
+            max-width: 1100px; 
+            margin: 40px auto !important; /* Wymusza wyśrodkowanie okna */
+            padding: 20px; 
+            background: rgba(0,0,0,0.8); 
+            border: 2px solid #3498db; 
+            border-radius: 15px; 
+            color: white; 
+            display: block !important;
+        }
+        
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .form-group { display: flex; flex-direction: column; text-align: left; }
+        .form-group label { font-size: 12px; color: #aaa; margin-bottom: 5px; text-transform: uppercase; }
+        .form-group input, .form-group select { padding: 10px; background: #111; border: 1px solid #444; color: white; border-radius: 5px; width: 100%; box-sizing: border-box; }
+        .form-group input:focus, .form-group select:focus { border-color: #3498db; outline: none; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
+        th, td { border: 1px solid #333; padding: 10px; text-align: center; }
+        th { background: #222; color: #3498db; }
+        tr:nth-child(even) { background: #1a1a1a; }
+        .diff-skull { color: red; font-weight: bold; }
+        
+        .helper-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; flex-wrap: wrap; }
+        .h-tab { padding: 10px 20px; background: #222; border: 1px solid #444; color: #aaa; cursor: pointer; border-radius: 5px; font-weight: bold; transition: 0.2s; }
+        .h-tab.active { background: #3498db; color: white; border-color: #3498db; }
+        .auto-calc-icon { color: #f1c40f; font-size: 10px; margin-left: 5px; }
+        .adv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
+
+        .modal-box { max-height: 90vh; overflow-y: auto; }
+
+        /* --- RESPENSYWNOŚĆ (TELEFONY) --- */
+        @media (max-width: 768px) {
+            .helper-container { margin: 20px 10px !important; padding: 15px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .h-tab { flex: 1 1 100%; text-align: center; }
+            table { font-size: 11px; }
+            th, td { padding: 6px 4px; }
+            .adv-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="top-nav-bar">
+        <div class="nav-group">
+            <button class="nav-btn" onclick="window.location.href='index.html'">🔙 WRÓĆ DO GRY</button>
+        </div>
+    </div>
+
+    <div class="helper-container">
+        <h2 style="color: #3498db; margin-bottom: 20px;">🛠️ POMOCNIK PRACOWNIKA</h2>
+
+        <div class="helper-tabs">
+            <button class="h-tab active" id="tab-btn-pakowanie" onclick="switchHelperTab('pakowanie')">📦 PAKOWANIE (TRYTYTKI)</button>
+            <button class="h-tab" id="tab-btn-maszyny" onclick="switchHelperTab('maszyny')">⚙️ ZMIANA NA MASZYNIE</button>
+            <button class="h-tab" id="tab-btn-kalkulator" onclick="switchHelperTab('kalkulator')">🧮 KALKULATOR NORMY</button>
+        </div>
+
+        <div id="view-pakowanie">
+            <div style="background: #151515; padding: 20px; border-radius: 10px; border: 1px solid #333;">
+                <h3 style="margin-top: 0;">Dodaj nowe trytytki do bazy</h3>
+                
+                <div class="form-grid">
+                    <div class="form-group"><label>Oznaczenie (np. 55E)</label><input type="text" id="t-oznaczenie" placeholder="55E"></div>
+                    <div class="form-group"><label>Numer Detalu</label><input type="text" id="t-detal" placeholder="010-00915"></div>
+                    <div class="form-group"><label>Sztuk w worku</label><input type="number" id="t-worek" value="0"></div>
+                    <div class="form-group"><label>Sztuk w kartonie (Baza dla Auto)</label><input type="number" id="t-karton" value="5000" oninput="calcPallet('t', 'karton')"></div>
+                    <div class="form-group"><label>Kartonów na palecie <span class="auto-calc-icon">⚡ Auto</span></label><input type="number" id="t-paleta-kartony" oninput="calcPallet('t', 'kartony')"></div>
+                    <div class="form-group"><label>Sztuk na palecie <span class="auto-calc-icon">⚡ Auto</span></label><input type="number" id="t-paleta-szt" oninput="calcPallet('t', 'szt')"></div>
+                    <div class="form-group"><label>Dozowana Woda (ml) [0 = brak]</label><input type="number" id="t-woda" placeholder="np. 351"></div>
+                    <div class="form-group"><label>Próbka odliczeniowa (szt)</label><input type="number" id="t-probka" placeholder="np. 50"></div>
+                    <div class="form-group"><label>Oznaczenie worka</label><input type="text" id="t-ozn-worek" placeholder="np. W-55"></div>
+                    <div class="form-group"><label>Oznaczenie kartonu</label><input type="text" id="t-ozn-karton" placeholder="np. K-88"></div>
+                    <div class="form-group"><label>Norma (Szt/1h/1os)</label><input type="number" id="t-norma" value="33000"></div>
+                    <div class="form-group">
+                        <label>Stopień Trudności</label>
+                        <div style="display:flex; gap:10px;">
+                            <select id="t-trudnosc" style="width: 40%;"><option value="Bardzo łatwo">🟢 Bardzo łatwo</option><option value="Łatwo">🟡 Łatwo</option><option value="Średnio">🟠 Średnio</option><option value="Trudno">🔴 Trudno</option><option value="💀">💀 Tragedia</option></select>
+                            <input type="text" id="t-dopisek" placeholder="Dopisek..." style="width: 60%;">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;"><label>Osobista Uwaga</label><input type="text" id="t-uwaga" placeholder="..."></div>
+                <button class="action-btn purple" style="width: 100%;" onclick="submitTie()">➕ DODAJ TRYTYTKĘ</button>
+            </div>
+
+            <div style="overflow-x: auto; border: 1px solid #333; border-radius: 5px; margin-top: 20px;">
+                <table>
+                    <thead><tr><th>Ozn.</th><th>Numer Detalu</th><th>Pakowanie</th><th>Parametry</th><th>Norma (h/os)</th><th>Trudność / Uwagi</th><th>Akcje</th></tr></thead>
+                    <tbody id="ties-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-maszyny" style="display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <label style="color:#aaa;">Wybierz Maszynę:</label>
+                    <select id="machine-select" style="padding:10px; background:#111; color:white; border:1px solid #444;" onchange="renderMachineProducts()"><option value="">-- Wybierz lub dodaj nową --</option></select>
+                </div>
+                <button class="action-btn gold" onclick="promptAddMachine()">➕ DODAJ NOWĄ MASZYNĘ</button>
+            </div>
+
+            <div id="machine-add-panel" style="display:none; background: #1a1a1a; padding: 20px; border-radius: 10px; border: 1px solid #444;">
+                <h3 style="margin-top: 0; color:#f1c40f;">Dodaj detal dla maszyny: <span id="selected-machine-name"></span></h3>
+                <div class="form-grid">
+                    <div class="form-group"><label>Oznaczenie Detalu</label><input type="text" id="m-oznaczenie"></div>
+                    <div class="form-group"><label>Numer Detalu</label><input type="text" id="m-detal"></div>
+                    <div class="form-group"><label>Sztuk w worku</label><input type="number" id="m-worek" value="0"></div>
+                    <div class="form-group"><label>Sztuk w kartonie</label><input type="number" id="m-karton" value="0" oninput="calcPallet('m', 'karton')"></div>
+                    <div class="form-group"><label>Kartonów na palecie ⚡</label><input type="number" id="m-paleta-kartony" oninput="calcPallet('m', 'kartony')"></div>
+                    <div class="form-group"><label>Sztuk na palecie ⚡</label><input type="number" id="m-paleta-szt" oninput="calcPallet('m', 'szt')"></div>
+                    <div class="form-group"><label>Dozowana Woda (ml)</label><input type="number" id="m-woda" placeholder="0"></div>
+                    <div class="form-group"><label>Próbka odliczeniowa (szt)</label><input type="number" id="m-probka" placeholder="0"></div>
+                    <div class="form-group"><label>Oznaczenie worka</label><input type="text" id="m-ozn-worek"></div>
+                    <div class="form-group"><label>Oznaczenie kartonu</label><input type="text" id="m-ozn-karton"></div>
+                    <div class="form-group"><label>Norma (Szt/1h/1os)</label><input type="number" id="m-norma" value="0"></div>
+                    <div class="form-group">
+                        <label>Stopień Trudności</label>
+                        <div style="display:flex; gap:10px;">
+                            <select id="m-trudnosc" style="width: 40%;"><option value="Bardzo łatwo">🟢 Bardzo łatwo</option><option value="Łatwo">🟡 Łatwo</option><option value="Średnio">🟠 Średnio</option><option value="Trudno">🔴 Trudno</option><option value="💀">💀 Tragedia</option></select>
+                            <input type="text" id="m-dopisek" placeholder="Dopisek..." style="width: 60%;">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;"><label>Uwagi</label><input type="text" id="m-uwaga"></div>
+                <button class="action-btn purple" style="width: 100%;" onclick="submitMachineProduct()">➕ DODAJ DETAL DO MASZYNY</button>
+            </div>
+
+            <div id="machine-table-wrapper" style="display:none; margin-top:20px;">
+                <h3 style="color:#aaa;">Historia produkcji na tej maszynie:</h3>
+                <div style="overflow-x: auto; border: 1px solid #333; border-radius: 5px;">
+                    <table>
+                        <thead><tr><th>Ozn. Detalu</th><th>Numer</th><th>Pakowanie</th><th>Parametry</th><th>Norma</th><th>Trudność / Uwagi</th></tr></thead>
+                        <tbody id="machine-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-kalkulator" style="display:none;">
+            <div style="background: #151515; padding: 20px; border-radius: 10px; border: 1px solid #3498db;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; flex-wrap:wrap; gap:10px;">
+                    <h3 style="margin: 0; color: #3498db;">🧮 Kalkulator</h3>
+                    <div style="display: flex; gap: 5px; background: #0d0d0d; padding: 5px; border-radius: 8px; border: 1px solid #444;">
+                        <button id="mode-btn-simple" class="h-tab active" style="padding: 5px 15px; font-size: 12px; margin:0;" onclick="switchCalcMode('simple')">Tryb Prosty</button>
+                        <button id="mode-btn-adv" class="h-tab" style="padding: 5px 15px; font-size: 12px; margin:0;" onclick="switchCalcMode('adv')">Tryb Zaawansowany</button>
+                    </div>
+                </div>
+                
+                <div class="form-grid">
+                    <div class="form-group"><label>Produkt / Czynność</label><select id="calc-item" onchange="runCurrentCalc()"><option value="">Wybierz czynność...</option></select></div>
+                    <div class="form-group"><label>Docelowy Cel Normy (%)</label><input type="number" id="calc-percent" value="80" oninput="runCurrentCalc()"></div>
+                    <div class="form-group"><label>Ilość Godzin (np. 3,5)</label><input type="text" inputmode="decimal" id="calc-hours" value="8" oninput="runCurrentCalc()"></div>
+                    <div class="form-group"><label>Ilość Pracujących Osób</label><input type="number" id="calc-people" value="1" oninput="runCurrentCalc()"></div>
+                </div>
+                <hr style="border-color:#333; margin:20px 0;">
+
+                <div id="calc-simple-view">
+                    <p style="text-align:center; color:#aaa; font-size:14px; margin-top:0;">(Pokazuje cel produkcyjny do wykonania)</p>
+                    <div id="calc-results" style="display:none; padding:20px; background:#0d0d0d; border:1px solid #444; border-radius:8px; text-align:center;">
+                        <h2 style="color:#2ecc71; margin-bottom:5px;">Cel do wykonania (<span id="res-title-pct">80</span>%)</h2>
+                        <div style="font-size:36px; font-weight:bold; color:white; margin-bottom:15px; text-shadow: 0 0 10px rgba(46, 204, 113, 0.5);"><span id="res-total">0</span> <span style="font-size:16px; color:#aaa; font-weight:normal;">sztuk ogółem</span></div>
+                        <div id="res-boxes-container" style="display:flex; justify-content:center; gap:20px; margin-bottom:20px; flex-wrap:wrap;">
+                            <div style="background:#222; padding:15px; border-radius:5px; border:2px solid #333; min-width: 100px; flex: 1 1 30%;"><div style="font-size:12px; color:#aaa; font-weight:bold;">PALETY</div><div style="font-size:32px; color:#f1c40f;" id="res-p">0</div></div>
+                            <div style="background:#222; padding:15px; border-radius:5px; border:2px solid #333; min-width: 100px; flex: 1 1 30%;"><div style="font-size:12px; color:#aaa; font-weight:bold;">KARTONY</div><div style="font-size:32px; color:#e67e22;" id="res-k">0</div></div>
+                            <div style="background:#222; padding:15px; border-radius:5px; border:2px solid #333; min-width: 100px; flex: 1 1 30%;"><div style="font-size:12px; color:#aaa; font-weight:bold;">WORKI</div><div style="font-size:32px; color:#3498db;" id="res-w">0</div></div>
+                        </div>
+                        <div style="color:#aaa; font-size:14px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 5px; display: inline-block;">Pełny wynik dla <strong style="color:white;">100%</strong> normy: <br><span id="res-100-str" style="color:#fff; font-size: 16px; font-weight:bold; letter-spacing: 1px;"></span></div>
+                    </div>
+                </div>
+
+                <div id="calc-adv-view" style="display:none;">
+                    <p style="text-align:center; color:#aaa; font-size:14px; margin-top:0;">(Wpisz co już zrobiłeś, a my policzymy resztę)</p>
+                    <div id="adv-inputs-container" style="display:none; padding:20px; background:#0d0d0d; border:1px solid #444; border-radius:8px;">
+                        <div class="adv-grid">
+                            <div class="form-group"><label style="color:#f1c40f;">Ile zrobiłeś Palet?</label><input type="text" inputmode="decimal" id="adv-p" value="0" oninput="calculateAdvanced('p')" style="border-color:#f1c40f; font-size:18px; font-weight:bold;"></div>
+                            <div class="form-group"><label style="color:#e67e22;">Ile Kartonów?</label><input type="text" inputmode="decimal" id="adv-k" value="0" oninput="calculateAdvanced('k')" style="border-color:#e67e22; font-size:18px; font-weight:bold;"></div>
+                            <div class="form-group"><label style="color:#3498db;">Ile Worków?</label><input type="text" inputmode="decimal" id="adv-w" value="0" oninput="calculateAdvanced('w')" style="border-color:#3498db; font-size:18px; font-weight:bold;"></div>
+                            <div class="form-group"><label style="color:white;">Ile Sztuk Ogółem?</label><input type="text" inputmode="decimal" id="adv-szt" value="0" oninput="calculateAdvanced('szt')" style="border-color:white; font-size:18px; font-weight:bold;"></div>
+                        </div>
+                        <div style="background:#1a1a1a; padding:15px; border-radius:8px; text-align:center; border: 1px solid #333;">
+                            <h3 style="margin-top:0; color:#aaa; margin-bottom:10px;">Postęp w czasie <span id="adv-hrs-display">0</span>h</h3>
+                            <div id="adv-progress-text" style="font-size:24px; color:white; font-weight:bold;">Wykonano: <span style="color:#2ecc71">0%</span> normy</div>
+                            <div style="font-size:12px; color:#888; margin-top:5px;">(Docelowy cel: <span id="adv-target-display">0</span>%)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> 
+
+    <div id="edit-tie-modal" class="modal-overlay" style="display:none; z-index: 5000;">
+        <div class="modal-box" style="max-width: 900px; width: 95%; background: #151515; border: 2px solid #f1c40f; text-align: left;">
+            <h3 style="color:#f1c40f; margin-top:0;">✏️ Edycja Trytytki</h3>
+            <input type="hidden" id="e-t-id">
+            
+            <div class="form-grid">
+                <div class="form-group"><label>Oznaczenie (np. 55E)</label><input type="text" id="e-t-oznaczenie"></div>
+                <div class="form-group"><label>Numer Detalu</label><input type="text" id="e-t-detal"></div>
+                <div class="form-group"><label>Sztuk w worku</label><input type="number" id="e-t-worek"></div>
+                <div class="form-group"><label>Sztuk w kartonie</label><input type="number" id="e-t-karton" oninput="calcPallet('e-t', 'karton')"></div>
+                <div class="form-group"><label>Kartonów na palecie ⚡</label><input type="number" id="e-t-paleta-kartony" oninput="calcPallet('e-t', 'kartony')"></div>
+                <div class="form-group"><label>Sztuk na palecie ⚡</label><input type="number" id="e-t-paleta-szt" oninput="calcPallet('e-t', 'szt')"></div>
+                <div class="form-group"><label>Dozowana Woda (ml)</label><input type="number" id="e-t-woda"></div>
+                <div class="form-group"><label>Próbka odliczeniowa (szt)</label><input type="number" id="e-t-probka"></div>
+                <div class="form-group"><label>Oznaczenie worka</label><input type="text" id="e-t-ozn-worek"></div>
+                <div class="form-group"><label>Oznaczenie kartonu</label><input type="text" id="e-t-ozn-karton"></div>
+                <div class="form-group"><label>Norma (Szt/1h/1os)</label><input type="number" id="e-t-norma"></div>
+                <div class="form-group">
+                    <label>Stopień Trudności</label>
+                    <div style="display:flex; gap:10px;">
+                        <select id="e-t-trudnosc" style="width: 40%;"><option value="Bardzo łatwo">🟢 Bardzo łatwo</option><option value="Łatwo">🟡 Łatwo</option><option value="Średnio">🟠 Średnio</option><option value="Trudno">🔴 Trudno</option><option value="💀">💀 Tragedia</option></select>
+                        <input type="text" id="e-t-dopisek" placeholder="Dopisek..." style="width: 60%;">
+                    </div>
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 15px;"><label>Osobista Uwaga</label><input type="text" id="e-t-uwaga"></div>
+            
+            <div style="display:flex; gap:15px; flex-wrap: wrap;">
+                <button class="action-btn gold" style="flex:1; min-width: 150px;" onclick="submitEditTie()">ZAPISZ ZMIANY</button>
+                <button class="action-btn red" style="flex:1; min-width: 150px;" onclick="document.getElementById('edit-tie-modal').style.display='none'">ANULUJ</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script-helper.js"></script>
+</body>
+</html>

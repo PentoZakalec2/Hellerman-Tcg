@@ -1712,6 +1712,158 @@ app.post('/api/daily-rewards/claim', async (req, res) => {
     }
 });
 
+/* =========================================
+   10. POMOCNIK PRACOWNIKA (TRYTYTKI)
+   ========================================= */
+
+// API: Pobierz listę trytytek
+app.get('/api/helper/ties', async (req, res) => {
+    const connection = await mysql.createConnection(dbConfig);
+    try {
+        const [rows] = await connection.query('SELECT * FROM cable_ties ORDER BY oznaczenie ASC');
+        res.json({ success: true, ties: rows });
+    } catch(e) {
+        console.error(e);
+        res.json({ success: false, error: "Błąd bazy danych" });
+    } finally {
+        connection.end();
+    }
+});
+
+// API: Dodaj nową trytytkę
+app.post('/api/helper/add-tie', async (req, res) => {
+    const userId = req.session.userId || null; 
+    const { 
+        oznaczenie, numer_detalu, szt_w_worku, szt_w_kartonie, 
+        szt_na_palecie, kartony_na_palecie, norma, trudnosc, dopisek, uwaga,
+        woda, probka, ozn_worka, ozn_kartonu
+    } = req.body;
+
+    if (!oznaczenie || !numer_detalu) return res.json({ success: false, error: "Oznaczenie i Numer Detalu są wymagane!" });
+
+    const connection = await mysql.createConnection(dbConfig);
+    try {
+        await connection.query(`
+            INSERT INTO cable_ties 
+            (oznaczenie, numer_detalu, sztuki_w_worku, sztuki_w_kartonie, sztuki_na_palecie, kartony_na_palecie, norma_h_osoba, trudnosc_poziom, trudnosc_dopisek, uwaga, added_by, woda_ml, probka, oznaczenie_worka, oznaczenie_kartonu) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            oznaczenie, numer_detalu, szt_w_worku || 0, szt_w_kartonie || 0, 
+            szt_na_palecie || 0, kartony_na_palecie || 0, norma || 0, 
+            trudnosc, dopisek, uwaga, userId,
+            woda || 0, probka || 0, ozn_worka || '', ozn_kartonu || ''
+        ]);
+        res.json({ success: true });
+    } catch(e) {
+        console.error(e);
+        res.json({ success: false, error: "Błąd podczas zapisywania." });
+    } finally { connection.end(); }
+});
+
+/* --- DODAJ TO W SERVER.JS (Sekcja 10. POMOCNIK) --- */
+
+// API: Pobierz wszystkie maszyny i ich detale
+app.get('/api/helper/machines', async (req, res) => {
+    const connection = await mysql.createConnection(dbConfig);
+    try {
+        const [machines] = await connection.query('SELECT * FROM machines ORDER BY oznaczenie_maszyny ASC');
+        const [products] = await connection.query('SELECT * FROM machine_products ORDER BY id DESC');
+        res.json({ success: true, machines, products });
+    } catch(e) {
+        console.error(e);
+        res.json({ success: false, error: "Błąd bazy danych" });
+    } finally {
+        connection.end();
+    }
+});
+
+// API: Dodaj nową maszynę
+app.post('/api/helper/add-machine', async (req, res) => {
+    const { name } = req.body;
+    if (!name) return res.json({ success: false, error: "Podaj oznaczenie maszyny!" });
+
+    const connection = await mysql.createConnection(dbConfig);
+    try {
+        await connection.query('INSERT INTO machines (oznaczenie_maszyny) VALUES (?)', [name.toUpperCase()]);
+        res.json({ success: true });
+    } catch(e) {
+        if (e.code === 'ER_DUP_ENTRY') res.json({ success: false, error: "Taka maszyna już istnieje!" });
+        else res.json({ success: false, error: "Błąd bazy danych." });
+    } finally {
+        connection.end();
+    }
+});
+
+// API: Dodaj detal do maszyny
+app.post('/api/helper/add-machine-product', async (req, res) => {
+    const userId = req.session.userId || null; 
+    const { 
+        machine_id, oznaczenie, numer_detalu, szt_w_worku, szt_w_kartonie, 
+        szt_na_palecie, kartony_na_palecie, norma, trudnosc, dopisek, uwaga,
+        woda, probka, ozn_worka, ozn_kartonu
+    } = req.body;
+
+    if (!machine_id || !oznaczenie || !numer_detalu) return res.json({ success: false, error: "Wypełnij wymagane pola!" });
+
+    const connection = await mysql.createConnection(dbConfig);
+    try {
+        await connection.query(`
+            INSERT INTO machine_products 
+            (machine_id, oznaczenie, numer_detalu, sztuki_w_worku, sztuki_w_kartonie, sztuki_na_palecie, kartony_na_palecie, norma_h_osoba, trudnosc_poziom, trudnosc_dopisek, uwaga, added_by, woda_ml, probka, oznaczenie_worka, oznaczenie_kartonu) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            machine_id, oznaczenie, numer_detalu, szt_w_worku || 0, szt_w_kartonie || 0, 
+            szt_na_palecie || 0, kartony_na_palecie || 0, norma || 0, 
+            trudnosc, dopisek, uwaga, userId,
+            woda || 0, probka || 0, ozn_worka || '', ozn_kartonu || ''
+        ]);
+        res.json({ success: true });
+    } catch(e) {
+        console.error(e);
+        res.json({ success: false, error: "Błąd podczas zapisywania." });
+    } finally { connection.end(); }
+});
+
+// API: Usuń trytytkę
+app.delete('/api/helper/ties/:id', async (req, res) => {
+    const connection = await mysql.createConnection(dbConfig);
+    try {
+        await connection.query('DELETE FROM cable_ties WHERE id = ?', [req.params.id]);
+        res.json({ success: true });
+    } catch(e) {
+        console.error(e);
+        res.json({ success: false, error: "Błąd podczas usuwania z bazy." });
+    } finally { connection.end(); }
+});
+
+// API: Edytuj trytytkę
+app.put('/api/helper/ties/:id', async (req, res) => {
+    const { 
+        oznaczenie, numer_detalu, szt_w_worku, szt_w_kartonie, 
+        szt_na_palecie, kartony_na_palecie, norma, trudnosc, dopisek, uwaga,
+        woda, probka, ozn_worka, ozn_kartonu
+    } = req.body;
+
+    const connection = await mysql.createConnection(dbConfig);
+    try {
+        await connection.query(`
+            UPDATE cable_ties SET 
+                oznaczenie=?, numer_detalu=?, sztuki_w_worku=?, sztuki_w_kartonie=?, sztuki_na_palecie=?, 
+                kartony_na_palecie=?, norma_h_osoba=?, trudnosc_poziom=?, trudnosc_dopisek=?, uwaga=?, 
+                woda_ml=?, probka=?, oznaczenie_worka=?, oznaczenie_kartonu=?
+            WHERE id=?
+        `, [
+            oznaczenie, numer_detalu, szt_w_worku || 0, szt_w_kartonie || 0, szt_na_palecie || 0, 
+            kartony_na_palecie || 0, norma || 0, trudnosc, dopisek, uwaga, 
+            woda || 0, probka || 0, ozn_worka || '', ozn_kartonu || '', req.params.id
+        ]);
+        res.json({ success: true });
+    } catch(e) {
+        console.error(e);
+        res.json({ success: false, error: "Błąd podczas edycji." });
+    } finally { connection.end(); }
+});
+
 app.listen(PORT, () => { 
     console.log(`Serwer działa na porcie ${PORT}`); 
 });
